@@ -1,0 +1,2769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tantua Hub | RPG Classroom</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Google AdMob Script -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-app-pub-4462145263807781"
+     crossorigin="anonymous"></script>
+    <style>
+        :root { --bg: #0d1117; --card: #161b22; --primary: #ffd700; --text: #f0f6fc; --border: #30363d; --blue: #58a6ff; --red: #f85149; --green: #2ea043; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding-bottom: 50px; user-select: none; }
+        #app { max-width: 480px; margin: 0 auto; padding: 15px; }
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 25px; border-radius: 50px; z-index: 9999; display: none; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; }
+        
+        .card { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 12px; position: relative; }
+        .btn { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 8px; }
+        .btn-gold { background: var(--primary); color: #000; }
+        .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid var(--border); color: #fff; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        textarea { resize: vertical; min-height: 80px; }
+        
+        /* XP & Badge Styling */
+        .xp-container { height: 10px; background: #000; border-radius: 5px; margin: 10px 0; border: 1px solid #333; overflow: hidden; }
+        .xp-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--primary)); width: 0%; transition: 1s ease; }
+        .badge-icon { font-size: 1.8rem; margin-right: 12px; }
+
+        /* Lists & Tables */
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #21262d; font-size: 0.85rem; }
+        .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .shop-item { background: #0d1117; padding: 10px; border-radius: 10px; border: 1px solid var(--border); text-align: center; cursor: pointer; transition: 0.2s; }
+        .shop-item:hover { border-color: var(--primary); }
+        .shop-item-desc { font-size: 0.7rem; color: #8b949e; margin: 5px 0; }
+
+        /* Timer Bar */
+        .t-cont { background: #000; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px; border: 1px solid #333; }
+        #t-bar { height: 100%; background: var(--primary); width: 100%; transition: linear; }
+
+        /* Multiple Choice */
+        .choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+        .choice-btn { padding: 10px; background: #1c2128; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; color: var(--text); font-weight: bold; transition: 0.2s; }
+        .choice-btn:hover { border-color: var(--primary); }
+        .choice-btn.selected { background: var(--primary); color: #000; }
+
+        /* Tabs */
+        .tab-nav { display: flex; gap: 5px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .tab-btn { padding: 10px 15px; background: transparent; border: none; color: var(--text); cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; }
+        .tab-btn.active { border-bottom-color: var(--primary); color: var(--primary); }
+
+        /* Avatar */
+        .avatar-display { font-size: 3rem; text-align: center; margin: 10px 0; }
+        .avatar-customize { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .avatar-option { padding: 10px; background: #1c2128; border: 1px solid var(--border); border-radius: 8px; text-align: center; cursor: pointer; }
+        .avatar-option:hover { border-color: var(--primary); }
+
+        /* Rankings */
+        .rank-row { display: flex; align-items: center; gap: 10px; padding: 10px; background: #1c2128; border-radius: 8px; margin-bottom: 8px; }
+        .rank-num { font-weight: bold; font-size: 1.2rem; color: var(--primary); min-width: 30px; }
+        .rank-info { flex: 1; }
+        .rank-name { font-weight: bold; }
+        .rank-xp { font-size: 0.75rem; color: #8b949e; }
+
+        .screen { display: none; animation: fadeIn 0.4s ease; }
+        .active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Modal Styling */
+        #shop-item-modal { z-index: 99999 !important; }
+        #view-quiz-modal { z-index: 10000 !important; }
+        #q-builder-modal { z-index: 10000 !important; }
+        #quiz-manager-modal { z-index: 10000 !important; }
+
+        /* Shop Item Modal Styling */
+        #shop-item-modal .card {
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3);
+            border: 2px solid var(--primary);
+        }
+        #shop-item-desc {
+            font-size: 0.9rem !important;
+            line-height: 1.8 !important;
+            color: var(--text) !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="toast"></div>
+    <div id="app">
+        <header style="text-align: center; margin-bottom: 15px;">
+            <img src="https://i.postimg.cc/3yjpzqF3/Tantua-School-Staff-Parents-Forum-20260326-224906.jpg" style="width: 60px; border-radius: 12px; filter: drop-shadow(0 0 5px var(--primary));">
+        </header>
+
+        <section id="scr-auth" class="screen active">
+            <div class="card" style="text-align:center">
+                <h2>Portal Entrance</h2>
+                <div id="auth-choice">
+                    <button class="btn btn-gold" onclick="showAuth(false)">Create New Hero</button>
+                    <button class="btn btn-ghost" onclick="showAuth(true)">Existing Login</button>
+                </div>
+                <div id="auth-fields" style="display:none">
+                    <input type="email" id="email" class="input" placeholder="Email">
+                    <input type="password" id="pass" class="input" placeholder="Password">
+                    <div id="signup-extra" style="display:none">
+                        <input type="text" id="u-name" class="input" placeholder="Display Name">
+                        <select id="u-grade" class="input">
+                            <option value="Grade 4">Grade 4</option>
+                            <option value="Grade 5">Grade 5</option>
+                            <option value="Grade 6">Grade 6</option>
+                            <option value="Grade 7">Grade 7</option>
+                            <option value="Grade 8">Grade 8</option>
+                            <option value="Grade 9">Grade 9</option>
+                        </select>
+                        <select id="u-role" class="input">
+                            <option value="student">Student</option><option value="teacher">Teacher</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-gold" onclick="handleAuth()">Confirm</button>
+                    <p onclick="location.reload()" style="font-size:0.7rem; color:var(--blue); cursor:pointer">← Back</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="scr-teacher" class="screen">
+            <div class="card" style="border-left: 5px solid var(--primary);">
+                <h3 id="t-display-name">...</h3>
+                <p id="t-stats" style="font-size:0.75rem; color:#8b949e; margin:5px 0;">Class: - | Students: 0 | Subjects: 0</p>
+            </div>
+
+            <div class="card">
+                <h4>Class Subjects</h4>
+                <div id="t-sub-list" style="margin-bottom:10px;"></div>
+                <div style="display:flex; gap:5px">
+                    <input type="text" id="t-new-sub" class="input" placeholder="e.g. Science">
+                    <button class="btn btn-gold" style="width:60px" onclick="addSubject()">+</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>⚙️ Default Question Rewards</h4>
+                <p style="font-size:0.75rem; color:#8b949e; margin-bottom:12px;">Set default XP and coins for all new questions. Override per question if needed.</p>
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.75rem; color:#8b949e; display:block; margin-bottom:4px;">Default XP</label>
+                        <input type="number" id="t-default-xp" class="input" placeholder="e.g. 100" value="100" onchange="updateDefaultXP()">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:0.75rem; color:#8b949e; display:block; margin-bottom:4px;">Default Coins</label>
+                        <input type="number" id="t-default-coins" class="input" placeholder="e.g. 50" value="50" onchange="updateDefaultCoins()">
+                    </div>
+                </div>
+                <p style="font-size:0.7rem; color:var(--primary); margin-top:8px; font-weight:bold;">These values will be used for all new questions automatically ✓</p>
+            </div>
+
+            <div class="card">
+                <h4>Raid Builder (Quiz Creator)</h4>
+                <select id="t-raid-sub" class="input"><option>Select Subject</option></select>
+                <input type="text" id="t-raid-topic" class="input" placeholder="Quiz Topic Name">
+                <div id="t-q-pool" style="font-size:0.7rem; color:var(--blue); margin-bottom:8px;">0 Questions Queued</div>
+                <div id="t-questions-list" style="margin-bottom: 10px; max-height: 300px; overflow-y: auto;"></div>
+                <button class="btn btn-ghost" onclick="showQuestionBuilder()">+ Add Question</button>
+                <button class="btn btn-gold" onclick="deployRaid()">Deploy Quiz 🚀</button>
+            </div>
+
+            <!-- View Quiz Modal (Teacher) -->
+            <div id="view-quiz-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; padding:20px; overflow-y:auto;">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
+                        <div>
+                            <h3 id="quiz-view-title" style="margin:0; color:var(--primary);">Quiz Title</h3>
+                            <div style="font-size:0.75rem; color:#8b949e;">
+                                <span id="quiz-view-subject">Subject</span> | <span id="quiz-view-qcount">Questions</span>
+                            </div>
+                        </div>
+                        <button class="btn-ghost" style="padding:8px 12px; font-size:0.7rem;" onclick="closeViewQuiz()">Close</button>
+                    </div>
+                    <div id="quiz-questions-list" style="max-height:400px; overflow-y:auto; margin-bottom:15px;"></div>
+                    <button class="btn btn-ghost" style="color:var(--red);" onclick="deleteViewingQuiz()">Delete This Quiz</button>
+                </div>
+            </div>
+
+            <!-- Question Builder Modal -->
+            <div id="q-builder-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; padding:20px; overflow-y:auto;">
+                <div class="card">
+                    <h3>Add Question to Quiz</h3>
+                    <textarea id="q-text" class="input" placeholder="Type your question here..."></textarea>
+                    <input type="number" id="q-time" class="input" placeholder="Time per question (seconds)" value="30">
+                    <div style="display:flex; gap:10px;">
+                        <div style="flex:1;">
+                            <input type="number" id="q-xp" class="input" placeholder="XP Points for this question" value="100">
+                            <small style="color:#8b949e; margin-top:4px; display:block;">Default: <span id="q-xp-default">100</span></small>
+                        </div>
+                        <div style="flex:1;">
+                            <input type="number" id="q-gold" class="input" placeholder="Coins for this question" value="50">
+                            <small style="color:#8b949e; margin-top:4px; display:block;">Default: <span id="q-gold-default">50</span></small>
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin-top:15px;">Answer Format</h4>
+                    <select id="q-type" class="input" onchange="updateAnswerFormat()">
+                        <option value="text">Text Answer</option>
+                        <option value="multiple">Multiple Choice (A,B,C,D)</option>
+                    </select>
+
+                    <div id="text-answer-section">
+                        <input type="text" id="q-answer" class="input" placeholder="Correct answer">
+                    </div>
+
+                    <div id="multiple-choice-section" style="display:none;">
+                        <input type="text" id="q-optionA" class="input" placeholder="Option A">
+                        <input type="text" id="q-optionB" class="input" placeholder="Option B">
+                        <input type="text" id="q-optionC" class="input" placeholder="Option C">
+                        <input type="text" id="q-optionD" class="input" placeholder="Option D">
+                        <select id="q-correct-option" class="input">
+                            <option value="">Select Correct Answer</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-gold" onclick="saveQuestion()">Add to Quiz</button>
+                    <button class="btn btn-ghost" onclick="closeQuestionBuilder()">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Quiz Manager Modal -->
+            <div id="quiz-manager-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:10000; padding:20px; overflow-y:auto;">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="margin:0;">Quiz Manager</h3>
+                        <button class="btn-ghost" style="padding:8px 12px; font-size:0.7rem;" onclick="closeQuizManager()">✕ Close</button>
+                    </div>
+                    <div id="quiz-manager-list" style="max-height:600px; overflow-y:auto;"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4 style="cursor:pointer; user-select:none;" onclick="toggleStudentRoster()">
+                    👥 Student Roster <span id="roster-toggle" style="float:right;">▼</span>
+                </h4>
+                <div id="t-roster" style="display:none; margin-bottom:10px;"></div>
+            </div>
+
+            <!-- Gift Rewards to Students -->
+            <div class="card">
+                <h4>🎁 Gift Rewards</h4>
+                <p style="font-size:0.75rem; color:#8b949e; margin-bottom:10px;">Give XP or coins to students</p>
+                
+                <!-- Hidden input to store selected student ID -->
+                <input type="hidden" id="t-selected-student-id" value="">
+                
+                <div style="margin-bottom:10px;">
+                    <button class="btn btn-gold" style="width:100%; margin-bottom:8px;" onclick="populateStudentDropdown()">👥 Show Students to Select</button>
+                    <button class="btn btn-primary" style="width:100%; margin-bottom:8px; background:var(--primary); color:#000;" onclick="selectAllStudents()">🌟 Gift to ALL Students</button>
+                    <div id="t-student-list" style="max-height:200px; overflow-y:auto; margin-top:8px; padding:8px; background:#1c2128; border-radius:8px; display:none;"></div>
+                    <p id="selected-student-display" style="font-size:0.85rem; color:var(--blue); margin-top:10px; text-align:center; font-weight:bold; padding:8px; background:#1c2128; border-radius:8px;">No student selected</p>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#8b949e;">XP to Give</label>
+                        <input type="number" id="t-gift-xp" class="input" value="100" min="0" style="margin:4px 0;">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:0.7rem; color:#8b949e;">Coins to Give</label>
+                        <input type="number" id="t-gift-coins" class="input" value="50" min="0" style="margin:4px 0;">
+                    </div>
+                </div>
+
+                <button class="btn btn-gold" onclick="giftRewards()">🎁 Gift Rewards</button>
+                <p id="gift-status" style="font-size:0.7rem; color:var(--green); margin-top:8px; text-align:center;"></p>
+            </div>
+
+            <!-- Shop Price Management -->
+            <div class="card">
+                <h4>💰 Shop Prices</h4>
+                <p style="font-size:0.75rem; color:#8b949e; margin-bottom:10px;">Change item prices in the shop</p>
+                
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">The Radiant</label>
+                        <input type="number" id="price-radiant" class="input" value="500" min="0" style="margin:4px 0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">The Bold</label>
+                        <input type="number" id="price-bold" class="input" value="500" min="0" style="margin:4px 0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">The Scholar</label>
+                        <input type="number" id="price-scholar" class="input" value="600" min="0" style="margin:4px 0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">The Wise</label>
+                        <input type="number" id="price-wise" class="input" value="700" min="0" style="margin:4px 0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">Time Pause</label>
+                        <input type="number" id="price-pause" class="input" value="300" min="0" style="margin:4px 0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">Correct Answer</label>
+                        <input type="number" id="price-answer" class="input" value="250" min="0" style="margin:4px 0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">Name Aura</label>
+                        <input type="number" id="price-aura" class="input" value="200" min="0" style="margin:4px 0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">Double Rewards</label>
+                        <input type="number" id="price-double" class="input" value="400" min="0" style="margin:4px 0;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem; color:#8b949e;">Homework Pass</label>
+                        <input type="number" id="price-homework" class="input" value="500" min="0" style="margin:4px 0;">
+                    </div>
+                </div>
+
+                <button class="btn btn-gold" onclick="saveShopPrices()">💾 Save Prices</button>
+                <p id="price-status" style="font-size:0.7rem; color:var(--green); margin-top:8px; text-align:center;"></p>
+            </div>
+
+            <!-- Teacher Notes Section -->
+            <div class="card">
+                <h4>📝 Class Notes</h4>
+                <p style="font-size:0.75rem; color:#8b949e; margin-bottom:12px;">Write notes for your students</p>
+                
+                <div style="margin-bottom:12px;">
+                    <input type="text" id="t-note-subject" class="input" placeholder="Note Subject/Topic (e.g., Homework, Announcement)" style="margin-bottom:8px;">
+                    <textarea id="t-note-content" class="input" placeholder="Write your note here..." style="min-height:80px; resize:vertical; margin-bottom:8px;"></textarea>
+                    <button class="btn btn-gold" onclick="saveTeacherNote()" style="width:100%;">📌 Post Note</button>
+                </div>
+
+                <div style="border-top:1px solid #333; padding-top:12px;">
+                    <h4 style="font-size:0.9rem; margin-bottom:10px;">Your Notes</h4>
+                    <div id="t-notes-list" style="max-height:300px; overflow-y:auto;">
+                        <p style="text-align:center; color:#8b949e; font-size:0.75rem;">No notes yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>Manage Quizzes</h4>
+                <div id="t-quiz-manage" style="max-height: 300px; overflow-y: auto; margin-bottom: 10px;"></div>
+                <button class="btn btn-gold" onclick="openQuizManager()">📋 Quiz Manager</button>
+            </div>
+
+            <!-- Rank Reset -->
+            <div class="card">
+                <h4>🔄 Class Management</h4>
+                <p style="font-size:0.75rem; color:#8b949e; margin-bottom:10px;">Reset all students' ranks and start fresh</p>
+                <button class="btn btn-ghost" style="color:var(--red);" onclick="resetStudentRanks()">⚠️ Reset All Student Ranks</button>
+            </div>
+
+            <button class="btn btn-ghost" onclick="auth.signOut()">Logout</button>
+        </section>
+
+        <section id="scr-student" class="screen">
+            <div class="card">
+                <div style="display:flex; align-items:center">
+                    <span id="s-avatar-display" style="font-size:2.5rem; margin-right:12px;">👤</span>
+                    <div style="flex:1">
+                        <div id="s-name" style="font-weight:bold; font-size:1.1rem;">Hero Name</div>
+                        <div id="s-title" style="color:var(--blue); font-size:0.75rem; font-weight:bold;">[The Novice]</div>
+                    </div>
+                    <div id="s-tier-name" style="font-size:0.6rem; background:var(--primary); color:#000; padding:2px 6px; border-radius:4px; font-weight:bold;">NOVICE</div>
+                </div>
+                <div class="xp-container"><div id="s-xp-fill" class="xp-fill"></div></div>
+                <div style="display:flex; justify-content:space-between; font-size:0.65rem;">
+                    <span id="s-xp-text">0 / 500 XP</span>
+                    <span id="s-grade-display">Grade: -</span>
+                </div>
+                <div style="font-size:0.7rem; color:var(--blue); margin-top:6px; text-align:center;">
+                    Next Rank: <span id="s-next-rank" style="color:var(--primary); font-weight:bold;">NOVICE IV</span>
+                </div>
+            </div>
+
+            <!-- Student Navigation Tabs -->
+            <div class="tab-nav" id="student-tabs">
+                <button class="tab-btn active" onclick="switchStudentTab('quizzes')">Quizzes</button>
+                <button class="tab-btn" onclick="switchStudentTab('rankings')">Class Rank</button>
+                <button class="tab-btn" onclick="switchStudentTab('notes')">📝 Notes</button>
+                <button class="tab-btn" onclick="switchStudentTab('inventory')" id="inventory-tab-btn">🎒 Inventory</button>
+                <button class="tab-btn" onclick="switchStudentTab('shop')" id="shop-tab-btn">Shop</button>
+            </div>
+
+            <!-- Quizzes Tab -->
+            <div id="tab-quizzes" class="tab-content">
+                <div id="raid-zone"></div>
+                <div class="card">
+                    <h4>Battle Log ⚔️</h4>
+                    <div id="battle-log"></div>
+                </div>
+                <button class="btn btn-ghost" onclick="auth.signOut()" style="margin-top:12px;">Logout</button>
+            </div>
+
+            <!-- Rankings Tab -->
+            <div id="tab-rankings" class="tab-content" style="display:none;">
+                <div class="card">
+                    <h4>Class Rankings 🏆</h4>
+                    <div id="s-leaderboard"></div>
+                </div>
+                <button class="btn btn-ghost" onclick="auth.signOut()" style="margin-top:12px;">Logout</button>
+            </div>
+
+            <!-- Notes Tab -->
+            <div id="tab-notes" class="tab-content" style="display:none;">
+                <div class="card">
+                    <h4>📝 Class Notes</h4>
+                    <p style="font-size:0.75rem; color:#8b949e; margin-bottom:12px;">Notes from your teacher</p>
+                    <div id="s-notes-list" style="max-height:500px; overflow-y:auto;">
+                        <p style="text-align:center; color:#8b949e; font-size:0.75rem;">No notes yet</p>
+                    </div>
+                </div>
+                <button class="btn btn-ghost" onclick="auth.signOut()" style="margin-top:12px;">Logout</button>
+            </div>
+
+            <!-- Inventory Tab -->
+            <div id="tab-inventory" class="tab-content" style="display:none;">
+                <div class="card">
+                    <h4>🎒 My Inventory</h4>
+                    <p style="font-size:0.75rem; color:#8b949e; margin-bottom:10px;">Your powerup items ready to use in quizzes</p>
+                    <div id="s-inventory-list" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <p style="grid-column:1/-1; text-align:center; color:#8b949e;">No items yet. Buy from the shop!</p>
+                    </div>
+                </div>
+                <button class="btn btn-ghost" onclick="auth.signOut()" style="margin-top:12px;">Logout</button>
+            </div>
+
+            <!-- Shop Tab -->
+            <div id="tab-shop" class="tab-content" style="display:none;">
+                <div class="card">
+                    <h4>Style Shop 🪙 <span id="s-coins">0</span></h4>
+                    <div class="shop-grid">
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('The Radiant', 500, '✨', 'Shine bright like a diamond. This title shows you are a beacon of light in your class. Shows off your radiant personality and dedication to learning!')">
+                            ✨<br><small>The Radiant</small>
+                            <div class="shop-item-desc">Shine bright</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">500</button>
+                        </div>
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('The Bold', 500, '💪', 'Show your strength. This title displays courage and determination. You are not afraid to face any challenge and always push yourself to be better!')">
+                            💪<br><small>The Bold</small>
+                            <div class="shop-item-desc">Show strength</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">500</button>
+                        </div>
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('The Scholar', 600, '📚', 'Knowledge is power. This title shows you are dedicated to learning and mastering your subjects. A true seeker of wisdom and understanding!')">
+                            📚<br><small>The Scholar</small>
+                            <div class="shop-item-desc">Knowledge power</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">600</button>
+                        </div>
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('The Wise', 700, '🧙', 'Ancient wisdom. Only the most experienced heroes earn this title. Shows ultimate mastery and understanding of your craft!')">
+                            🧙<br><small>The Wise</small>
+                            <div class="shop-item-desc">Ultimate mastery</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">700</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>Avatar Customization 🎨 <span id="avatar-coin-cost">50</span> per item</h4>
+                    <div class="avatar-display" id="avatar-preview">👤</div>
+                    <div class="avatar-customize">
+                        <div class="avatar-option" onclick="buyAvatar('👨')">👨 Man<br><small>50 coins</small></div>
+                        <div class="avatar-option" onclick="buyAvatar('👩')">👩 Woman<br><small>50 coins</small></div>
+                        <div class="avatar-option" onclick="buyAvatar('🧔')">🧔 Bearded<br><small>50 coins</small></div>
+                        <div class="avatar-option" onclick="buyAvatar('👶')">👶 Young<br><small>50 coins</small></div>
+                        <div class="avatar-option" onclick="buyAvatar('🧑‍🔬')">🧑‍🔬 Scientist<br><small>50 coins</small></div>
+                        <div class="avatar-option" onclick="buyAvatar('🧑‍🎓')">🧑‍🎓 Student<br><small>50 coins</small></div>
+                        <div class="avatar-option" onclick="buyAvatar('🧑‍⚔️')">🧑‍⚔️ Warrior<br><small>50 coins</small></div>
+                        <div class="avatar-option" onclick="buyAvatar('🧙‍♂️')">🧙‍♂️ Wizard<br><small>50 coins</small></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4>⚡ Powerup Items</h4>
+                    <div class="shop-grid">
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('Time Pause', 300, '⏸️', 'Pause time during a quiz for 30 seconds! Use it when you need extra time to think. Can be used once per quiz.')">
+                            ⏸️<br><small>Time Pause</small>
+                            <div class="shop-item-desc">Extra time</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">300</button>
+                        </div>
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('Correct Answer', 250, '✅', 'Get one wrong answer counted as correct during a quiz! Use wisely to boost your score. Can be used once per quiz.')">
+                            ✅<br><small>Correct Answer</small>
+                            <div class="shop-item-desc">Fix mistakes</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">250</button>
+                        </div>
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('Name Aura', 200, '✨', 'Make your name glow with a golden aura in the class rankings! Stand out and show your prestige to everyone.')">
+                            ✨<br><small>Name Aura</small>
+                            <div class="shop-item-desc">Shine bright</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">200</button>
+                        </div>
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('Double Rewards', 400, '💰', 'Double your XP and coin rewards from the next quiz! All earnings will be multiplied by 2. Used after completing a quiz.')">
+                            💰<br><small>Double Rewards</small>
+                            <div class="shop-item-desc">2x earnings</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">400</button>
+                        </div>
+                        <div class="shop-item" style="cursor:pointer;" onclick="showShopItem('Homework Pass', 500, '📝', 'Get a free pass from homework! Your teacher will be notified that you purchased this. Use it to skip one homework assignment.')">
+                            📝<br><small>Homework Pass</small>
+                            <div class="shop-item-desc">Skip homework</div>
+                            <button class="btn btn-gold" style="padding:4px; font-size:0.7rem; margin-top:4px; pointer-events:none;">500</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Watch Ad for Coins -->
+                <div class="card" style="background:linear-gradient(135deg, #1c2128 0%, #2a3139 100%); border: 2px solid var(--primary);">
+                    <h4>🎬 Watch Ad for Coins</h4>
+                    <p style="font-size:0.75rem; color:#8b949e; margin-bottom:12px;">Watch a 30-second ad and earn free coins!</p>
+                    <div style="background:#0d1117; padding:12px; border-radius:8px; margin-bottom:12px; text-align:center;">
+                        <div style="font-size:1.5rem; color:var(--primary); font-weight:bold; margin-bottom:8px;">+10 Coins</div>
+                        <div style="font-size:0.8rem; color:#8b949e;">Per 30-second ad watched</div>
+                    </div>
+                    <div id="ad-watch-status" style="font-size:0.75rem; color:#8b949e; margin-bottom:12px; text-align:center;">Watch ads anytime, unlimited times!</div>
+                    <button class="btn btn-gold" onclick="watchAdForCoins()" style="width:100%;">🎬 Watch Ad Now</button>
+                    <p id="ad-reward-msg" style="font-size:0.7rem; color:var(--green); margin-top:8px; text-align:center;"></p>
+                </div>
+
+                <button class="btn btn-ghost" onclick="auth.signOut()" style="margin-top:12px;">Logout</button>
+            </div>
+
+        </section>
+    </div>
+
+    <!-- Shop Item Modal - OUTSIDE ALL SECTIONS -->
+    <div id="shop-item-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:9999999; padding:20px; overflow-y:auto;">
+        <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; width:100%;">
+            <div class="card" style="width:100%; max-width:400px;">
+                <div style="text-align:center; font-size:4rem; margin-bottom:15px;" id="shop-item-emoji">✨</div>
+                <h3 id="shop-item-name" style="text-align:center; color:var(--primary); margin-bottom:10px;">Item Name</h3>
+                <div style="background:#1c2128; padding:12px; border-radius:8px; margin-bottom:15px; border-left:3px solid var(--primary);">
+                    <div style="font-size:0.75rem; color:#8b949e; margin-bottom:8px;">DESCRIPTION</div>
+                    <p id="shop-item-desc" style="margin:0; line-height:1.6; color:var(--text);">Item description goes here</p>
+                </div>
+                <div style="background:#1c2128; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
+                    <div style="font-size:1.2rem; color:var(--primary); font-weight:bold;" id="shop-item-price">500 Coins</div>
+                </div>
+                
+                <!-- Aura Color Picker (hidden by default) -->
+                <div id="aura-color-picker" style="display:none; margin-bottom:15px;">
+                    <div style="font-size:0.75rem; color:#8b949e; margin-bottom:8px;">CHOOSE AURA COLOR</div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        <div style="padding:10px; background:#ff4444; border-radius:8px; cursor:pointer; border:2px solid transparent;" onclick="selectAuraColor('#ff4444', 'Red')">🔴 Red</div>
+                        <div style="padding:10px; background:#44ff44; border-radius:8px; cursor:pointer; border:2px solid transparent;" onclick="selectAuraColor('#44ff44', 'Green')">🟢 Green</div>
+                        <div style="padding:10px; background:#4444ff; border-radius:8px; cursor:pointer; border:2px solid transparent;" onclick="selectAuraColor('#4444ff', 'Blue')">🔵 Blue</div>
+                        <div style="padding:10px; background:#ffff44; border-radius:8px; cursor:pointer; border:2px solid transparent;" onclick="selectAuraColor('#ffff44', 'Yellow')">🟡 Yellow</div>
+                        <div style="padding:10px; background:#ff44ff; border-radius:8px; cursor:pointer; border:2px solid transparent;" onclick="selectAuraColor('#ff44ff', 'Purple')">🟣 Purple</div>
+                        <div style="padding:10px; background:#44ffff; border-radius:8px; cursor:pointer; border:2px solid transparent;" onclick="selectAuraColor('#44ffff', 'Cyan')">🟦 Cyan</div>
+                    </div>
+                    <p id="selected-color" style="text-align:center; color:var(--primary); margin-top:10px; font-size:0.9rem;">Select a color</p>
+                </div>
+
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-gold" onclick="confirmShopBuy()">Buy Now</button>
+                    <button class="btn btn-ghost" onclick="closeShopModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notes Board Modal (Blackboard Style) -->
+    <div id="notes-board-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:9999999; padding:20px; overflow-y:auto;">
+        <div style="display:flex; align-items:flex-start; justify-content:center; min-height:100vh; width:100%; padding-top:20px;">
+            <div class="card" style="width:100%; max-width:800px; background:#1a1a2e; border:3px solid var(--primary);">
+                <!-- Close Button -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2 id="note-board-title" style="margin:0; color:var(--primary); word-break:break-word;">📝 Class Note</h2>
+                    <button class="btn-ghost" style="padding:8px 12px; font-size:1rem; flex-shrink:0;" onclick="closeNoteBoard()">✕</button>
+                </div>
+
+                <!-- Blackboard Content -->
+                <div id="note-board-content" style="background:#f5f5f5; padding:30px; border-radius:8px; min-height:300px; max-height:60vh; overflow-y:auto; font-size:1.2rem; line-height:2; color:#222; white-space:pre-wrap; word-wrap:break-word; border:2px solid var(--primary); margin-bottom:20px; font-family:'Segoe UI', 'Arial', sans-serif; letter-spacing:0.5px;">
+                    Note content goes here...
+                </div>
+
+                <!-- Date -->
+                <div style="text-align:right; color:#8b949e; font-size:0.8rem; margin-bottom:20px;">
+                    <span id="note-board-date"></span>
+                </div>
+
+                <!-- Action Buttons (for teachers only) -->
+                <div id="note-board-actions" style="display:none; gap:8px; margin-bottom:12px;">
+                    <button class="btn" style="flex:1; padding:8px; background:var(--blue); color:#000; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="editCurrentNote()">✏️ Edit</button>
+                    <button class="btn" style="flex:1; padding:8px; background:var(--red); color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer;" onclick="deleteCurrentNote()">🗑️ Delete</button>
+                </div>
+
+                <button class="btn btn-gold" style="width:100%;" onclick="closeNoteBoard()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Note Modal -->
+    <div id="edit-note-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.95); z-index:9999999; padding:20px; overflow-y:auto;">
+        <div style="display:flex; align-items:flex-start; justify-content:center; min-height:100vh; width:100%; padding-top:20px;">
+            <div class="card" style="width:100%; max-width:800px; background:#1a1a2e; border:3px solid var(--primary);">
+                <h2 style="margin:0 0 20px 0; color:var(--primary);">✏️ Edit Note</h2>
+                
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; color:var(--primary); font-weight:bold; margin-bottom:8px;">Subject/Topic:</label>
+                    <input id="edit-note-subject" type="text" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:#0d1117; color:var(--text); font-size:1rem; box-sizing:border-box;" placeholder="Note subject...">
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; color:var(--primary); font-weight:bold; margin-bottom:8px;">Note Content:</label>
+                    <textarea id="edit-note-content" style="width:100%; height:400px; padding:12px; border-radius:8px; border:1px solid var(--border); background:#0d1117; color:var(--text); font-size:1rem; font-family:'Segoe UI', sans-serif; box-sizing:border-box; resize:vertical;" placeholder="Write your note here..."></textarea>
+                </div>
+
+                <input id="edit-note-id" type="hidden">
+
+                <div style="display:flex; gap:8px;">
+                    <button class="btn btn-gold" style="flex:1;" onclick="saveEditedNote()">💾 Save Changes</button>
+                    <button class="btn btn-ghost" style="flex:1;" onclick="closeEditNoteModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db, auth;
+        let qPool = [];
+        let currentQuestionIndex = 0;
+        let activeTimer = null;
+        let currentQuizSession = null;
+        let currentUserRole = null; // Track if user is 'teacher' or 'student'
+        let defaultXP = 100; // Default XP for questions
+        let defaultCoins = 50; // Default coins for questions
+        let currentNoteId = null; // Track which note is being viewed
+
+        const tiers = [
+            // NOVICE RANKS
+            {n:"NOVICE V", i:"🥉", min:0, max:300},
+            {n:"NOVICE IV", i:"🥈", min:300, max:600},
+            {n:"NOVICE III", i:"🥇", min:600, max:900},
+            {n:"NOVICE II", i:"🏅", min:900, max:1200},
+            {n:"NOVICE I", i:"🎖️", min:1200, max:1500},
+            
+            // ADEPT RANKS
+            {n:"ADEPT V", i:"🥉", min:1500, max:1800},
+            {n:"ADEPT IV", i:"🥈", min:1800, max:2100},
+            {n:"ADEPT III", i:"🥇", min:2100, max:2400},
+            {n:"ADEPT II", i:"🏅", min:2400, max:2700},
+            {n:"ADEPT I", i:"🎖️", min:2700, max:3000},
+            
+            // MASTER RANKS
+            {n:"MASTER V", i:"🥉", min:3000, max:3500},
+            {n:"MASTER IV", i:"🥈", min:3500, max:4000},
+            {n:"MASTER III", i:"🥇", min:4000, max:4500},
+            {n:"MASTER II", i:"🏅", min:4500, max:5000},
+            {n:"MASTER I", i:"🎖️", min:5000, max:5500},
+            
+            // LEGENDARY RANKS
+            {n:"LEGENDARY V", i:"🥉", min:5500, max:6200},
+            {n:"LEGENDARY IV", i:"🥈", min:6200, max:6900},
+            {n:"LEGENDARY III", i:"🥇", min:6900, max:7600},
+            {n:"LEGENDARY II", i:"🏆", min:7600, max:8500},
+            {n:"LEGENDARY I", i:"👑", min:8500, max:Infinity}
+        ];
+
+        // Wait for Firebase to load
+        window.addEventListener('DOMContentLoaded', function() {
+            if(typeof firebase !== 'undefined') {
+                firebase.initializeApp({
+                    apiKey: "AIzaSyBJhWr_GjX8giwKb3cVigJjvGTa32parRQ",
+                    authDomain: "tantua-learning-app.firebaseapp.com",
+                    projectId: "tantua-learning-app",
+                    storageBucket: "tantua-learning-app.appspot.com",
+                    messagingSenderId: "219245232162",
+                    appId: "1:219245232162:web:e5fd97474bd759431dca7b"
+                });
+                
+                db = firebase.firestore();
+                auth = firebase.auth();
+            }
+        });
+
+        function notify(m, t="success") {
+            const toast = document.getElementById('toast');
+            toast.innerText = m;
+            toast.style.background = t === "error" ? "var(--red)" : "var(--green)";
+            toast.style.display = "block";
+            setTimeout(() => toast.style.display = "none", 3000);
+        }
+
+        function showAuth(isLogin) {
+            document.getElementById('auth-choice').style.display = 'none';
+            document.getElementById('auth-fields').style.display = 'block';
+            document.getElementById('signup-extra').style.display = isLogin ? 'none' : 'block';
+        }
+
+        async function handleAuth() {
+            if(!auth || !db) {
+                notify("Firebase not ready, please wait...", "error");
+                return;
+            }
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            try {
+                if(document.getElementById('signup-extra').style.display !== 'none') {
+                    const u = await auth.createUserWithEmailAndPassword(email, pass);
+                    const name = document.getElementById('u-name').value;
+                    const role = document.getElementById('u-role').value;
+                    const grade = document.getElementById('u-grade').value;
+                    await db.collection('users').doc(u.user.uid).set({
+                        name, role, grade, total_xp: 0, points: 0, title: "[Novice]", avatar: "👤", completed: []
+                    });
+                } else {
+                    await auth.signInWithEmailAndPassword(email, pass);
+                }
+            } catch(e) { notify(e.message, "error"); }
+        }
+
+        // Wait for Firebase to be ready before setting up auth listener
+        function setupAuthListener() {
+            if(!auth) {
+                setTimeout(setupAuthListener, 100);
+                return;
+            }
+            auth.onAuthStateChanged(async u => {
+                if(u) {
+                    const userData = (await db.collection('users').doc(u.uid).get()).data();
+                    if(userData.role === 'teacher') { loadTeacherUI(userData); }
+                    else { loadStudentUI(userData); }
+                } else { switchScreen('scr-auth'); }
+            });
+        }
+        setupAuthListener();
+
+        // TEACHER LOGIC
+        async function loadTeacherUI(u) {
+            currentUserRole = 'teacher'; // Set role
+            switchScreen('scr-teacher');
+            // Hide shop tab for teachers
+            const shopBtn = document.getElementById('shop-tab-btn');
+            const shopTab = document.getElementById('tab-shop');
+            if(shopBtn) shopBtn.style.display = 'none';
+            if(shopTab) shopTab.style.display = 'none';
+            
+            document.getElementById('t-display-name').innerText = u.name;
+            loadRewardSettings(); // Load teacher's reward settings
+            loadTeacherNotes(); // Load teacher's notes
+            populateStudentDropdown(); // Load students for gift rewards
+            const classRef = db.collection('classes').doc(u.grade);
+            classRef.onSnapshot(async doc => {
+                try {
+                    const subs = doc.data()?.subjects || [];
+                    document.getElementById('t-sub-list').innerHTML = subs.map(s => `<span class="btn-ghost" style="padding:4px 8px; margin:2px; display:inline-block; border-radius:4px; font-size:0.7rem;">${s} <b onclick="removeSub('${s}')" style="color:red; cursor:pointer">×</b></span>`).join('');
+                    document.getElementById('t-raid-sub').innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join('');
+                    const sSnap = await db.collection('users').where('grade','==',u.grade).where('role','==','student').get();
+                    document.getElementById('t-stats').innerText = `Class: ${u.grade} | Students: ${sSnap.size} | Subjects: ${subs.length}`;
+                    let rHtml = ""; sSnap.forEach(d => {
+                        const s = d.data();
+                        rHtml += `<div class="item-row"><span>${s.name} (${s.total_xp} XP)</span><div><button class="btn-ghost" style="padding:4px" onclick="giveTitle('${d.id}')">Title</button> <button class="btn-ghost" style="padding:4px; color:red" onclick="kick('${d.id}')">Kick</button></div></div>`;
+                    });
+                    document.getElementById('t-roster').innerHTML = rHtml;
+                } catch(e) {
+                    console.error("Error loading class data:", e);
+                    document.getElementById('t-roster').innerHTML = "<p style='color:#8b949e;'>Unable to load student roster. Check Firebase rules.</p>";
+                }
+            }, err => {
+                console.error("Class listener error:", err);
+            });
+
+            // Load quiz management with live updates (simplified)
+            db.collection('raids').where('grade','==',u.grade).onSnapshot(s => {
+                try {
+                    let quizzes = [];
+                    s.forEach(doc => {
+                        if(doc.data().teacher === u.name) {
+                            quizzes.push({id: doc.id, data: doc.data()});
+                        }
+                    });
+                    // Sort by newest first
+                    quizzes.sort((a, b) => (b.data.createdAt?.toMillis() || 0) - (a.data.createdAt?.toMillis() || 0));
+                    
+                    let quizHtml = "";
+                    quizzes.forEach(quiz => {
+                        const r = quiz.data;
+                        const qCount = r.qs.length;
+                        const responses = Object.keys(r.responses || {}).length;
+                        quizHtml += `<div class="card" style="border-left: 3px solid var(--blue); margin-bottom:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                                <div>
+                                    <div style="font-weight:bold; color:var(--primary);">${r.sub}: ${r.topic}</div>
+                                    <div style="font-size:0.75rem; color:#8b949e; margin-top:4px;">
+                                        📝 ${qCount} Questions | 👥 ${responses} Responses
+                                    </div>
+                                </div>
+                            <div style="display:flex; gap:5px;">
+                                <button class="btn-ghost" style="padding:4px 8px; font-size:0.65rem" onclick="viewQuiz('${quiz.id}')">View</button>
+                                <button class="btn-ghost" style="padding:4px 8px; font-size:0.65rem; color:var(--red)" onclick="deleteQuizConfirm('${quiz.id}')">Delete</button>
+                            </div>
+                        </div>
+                    </div>`;
+                    });
+                    document.getElementById('t-quiz-manage').innerHTML = quizHtml || "<p style='text-align:center; opacity:0.5; padding:15px;'>No quizzes created yet</p>";
+                } catch(e) {
+                    console.error("Error loading quizzes:", e);
+                    document.getElementById('t-quiz-manage').innerHTML = "<p style='color:#8b949e;'>Unable to load quizzes. Check Firebase rules.</p>";
+                }
+            }, err => {
+                console.error("Quiz listener error:", err);
+                document.getElementById('t-quiz-manage').innerHTML = "<p style='color:#8b949e;'>Unable to load quizzes. Check Firebase rules.</p>";
+            });
+        }
+
+        async function addSubject() {
+            const s = document.getElementById('t-new-sub').value;
+            if(!s) return;
+            const u = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+            await db.collection('classes').doc(u.grade).set({ subjects: firebase.firestore.FieldValue.arrayUnion(s) }, {merge:true});
+            document.getElementById('t-new-sub').value = "";
+        }
+
+        function showQuestionBuilder() {
+            // Clear form fields
+            document.getElementById('q-text').value = '';
+            document.getElementById('q-time').value = '30';
+            document.getElementById('q-xp').value = defaultXP; // Use default XP
+            document.getElementById('q-gold').value = defaultCoins; // Use default coins
+            document.getElementById('q-type').value = 'text';
+            document.getElementById('q-answer').value = '';
+            document.getElementById('q-optionA').value = '';
+            document.getElementById('q-optionB').value = '';
+            document.getElementById('q-optionC').value = '';
+            document.getElementById('q-optionD').value = '';
+            document.getElementById('q-correct-option').value = '';
+            // Update default displays
+            document.getElementById('q-xp-default').innerText = defaultXP;
+            document.getElementById('q-gold-default').innerText = defaultCoins;
+            // Reset visibility
+            document.getElementById('text-answer-section').style.display = 'block';
+            document.getElementById('multiple-choice-section').style.display = 'none';
+            document.getElementById('q-builder-modal').style.display = 'block';
+        }
+
+        function closeQuestionBuilder() {
+            document.getElementById('q-builder-modal').style.display = 'none';
+            document.getElementById('q-text').value = '';
+            document.getElementById('q-answer').value = '';
+            document.getElementById('q-optionA').value = '';
+            document.getElementById('q-optionB').value = '';
+            document.getElementById('q-optionC').value = '';
+            document.getElementById('q-optionD').value = '';
+            document.getElementById('q-type').value = 'text';
+            updateAnswerFormat();
+        }
+
+        function updateDefaultXP() {
+            const xpInput = document.getElementById('t-default-xp');
+            const xpValue = parseInt(xpInput.value) || 100;
+            defaultXP = xpValue;
+            // Update the displayed default in the question builder
+            document.getElementById('q-xp-default').innerText = defaultXP;
+            notify(`Default XP set to ${defaultXP} 📝`, 'success');
+        }
+
+        function updateDefaultCoins() {
+            const coinsInput = document.getElementById('t-default-coins');
+            const coinsValue = parseInt(coinsInput.value) || 50;
+            defaultCoins = coinsValue;
+            // Update the displayed default in the question builder
+            document.getElementById('q-gold-default').innerText = defaultCoins;
+            notify(`Default Coins set to ${defaultCoins} 📝`, 'success');
+        }
+
+        function updateAnswerFormat() {
+            const type = document.getElementById('q-type').value;
+            document.getElementById('text-answer-section').style.display = type === 'text' ? 'block' : 'none';
+            document.getElementById('multiple-choice-section').style.display = type === 'multiple' ? 'block' : 'none';
+        }
+
+        function saveQuestion() {
+            const text = document.getElementById('q-text').value;
+            const time = parseInt(document.getElementById('q-time').value) || 30;
+            const xp = parseInt(document.getElementById('q-xp').value) || 100;
+            const gold = parseInt(document.getElementById('q-gold').value) || 50;
+            const type = document.getElementById('q-type').value;
+            
+            if(!text) {
+                notify("Question text required", "error");
+                return;
+            }
+
+            let question = { q: text, type, time, xp, gold };
+
+            if(type === 'text') {
+                const answer = document.getElementById('q-answer').value.trim();
+                if(!answer) {
+                    notify("Correct answer required", "error");
+                    return;
+                }
+                question.a = answer.toUpperCase();
+            } else {
+                const correct = document.getElementById('q-correct-option').value;
+                if(!correct) {
+                    notify("Select correct answer", "error");
+                    return;
+                }
+                question.options = {
+                    A: document.getElementById('q-optionA').value,
+                    B: document.getElementById('q-optionB').value,
+                    C: document.getElementById('q-optionC').value,
+                    D: document.getElementById('q-optionD').value
+                };
+                question.correct = correct;
+            }
+
+            qPool.push(question);
+            displayQuestions();
+            document.getElementById('t-q-pool').innerText = `${qPool.length} Questions Queued`;
+            closeQuestionBuilder();
+            notify("Question added!");
+        }
+
+        function displayQuestions() {
+            let html = "";
+            qPool.forEach((q, i) => {
+                html += `<div style="background:#1c2128; padding:8px; border-radius:8px; margin-bottom:8px; font-size:0.75rem;">
+                    <div><b>Q${i+1}:</b> ${q.q}</div>
+                    <div style="color:#8b949e; font-size:0.65rem;">Type: ${q.type === 'text' ? 'Text' : 'Multiple Choice'} | Time: ${q.time}s | XP: ${q.xp} | Gold: ${q.gold}</div>
+                    <button class="btn-ghost" style="padding:2px 6px; font-size:0.65rem; width:auto; margin-top:4px" onclick="removeQuestion(${i})">Remove</button>
+                </div>`;
+            });
+            document.getElementById('t-questions-list').innerHTML = html;
+        }
+
+        function removeQuestion(i) {
+            qPool.splice(i, 1);
+            displayQuestions();
+            document.getElementById('t-q-pool').innerText = `${qPool.length} Questions Queued`;
+        }
+
+        async function deployRaid() {
+            const subject = document.getElementById('t-raid-sub').value;
+            const topic = document.getElementById('t-raid-topic').value;
+            
+            if(subject === 'Select Subject' || !topic || qPool.length === 0) {
+                notify("Complete all fields and add questions", "error");
+                return;
+            }
+
+            if(!confirm("Deploy this quiz to your class?")) return;
+
+            const u = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+            await db.collection('raids').add({
+                grade: u.grade,
+                teacher: u.name,
+                sub: subject,
+                topic: topic,
+                qs: qPool,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                responses: {} // Track student responses
+            });
+            qPool = [];
+            document.getElementById('t-raid-topic').value = '';
+            document.getElementById('t-q-pool').innerText = '0 Questions Queued';
+            document.getElementById('t-questions-list').innerHTML = '';
+            notify("Quiz Deployed! 🚀");
+        }
+
+        async function deleteQuizConfirm(quizId) {
+            if(confirm("Delete this quiz? Students won't be able to answer it anymore.")) {
+                await db.collection('raids').doc(quizId).delete();
+                notify("Quiz deleted successfully");
+            }
+        }
+
+        let viewingQuizId = null;
+
+        function viewQuiz(quizId) {
+            viewingQuizId = quizId;
+            db.collection('raids').doc(quizId).get().then(doc => {
+                if(!doc.exists) {
+                    notify("Quiz not found", "error");
+                    return;
+                }
+                const r = doc.data();
+                document.getElementById('quiz-view-title').innerText = r.topic;
+                document.getElementById('quiz-view-subject').innerText = r.sub;
+                document.getElementById('quiz-view-qcount').innerText = `${r.qs.length} Questions`;
+                
+                let qHtml = "";
+                r.qs.forEach((q, idx) => {
+                    qHtml += `<div style="background:#1c2128; padding:12px; border-radius:8px; margin-bottom:10px; border-left:3px solid var(--blue);">
+                        <div style="font-weight:bold; margin-bottom:8px;">Q${idx + 1}: ${q.q}</div>
+                        <div style="font-size:0.75rem; color:#8b949e; margin-bottom:8px;">
+                            Type: ${q.type === 'text' ? 'Text Answer' : 'Multiple Choice'} | Time: ${q.time}s | XP: ${q.xp}
+                        </div>`;
+                    
+                    if(q.type === 'text') {
+                        qHtml += `<div style="background:#0d1117; padding:8px; border-radius:4px; color:var(--green);">
+                            <div style="font-size:0.7rem; color:#8b949e;">Correct Answer:</div>
+                            ${q.a}
+                        </div>`;
+                    } else {
+                        qHtml += `<div style="background:#0d1117; padding:8px; border-radius:4px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.75rem;">
+                                <div>A: ${q.options.A}</div>
+                                <div>B: ${q.options.B}</div>
+                                <div>C: ${q.options.C}</div>
+                                <div>D: ${q.options.D}</div>
+                            </div>
+                            <div style="margin-top:8px; color:var(--green); font-weight:bold;">Correct: ${q.correct}</div>
+                        </div>`;
+                    }
+                    qHtml += `</div>`;
+                });
+                
+                document.getElementById('quiz-questions-list').innerHTML = qHtml;
+                document.getElementById('view-quiz-modal').style.display = 'block';
+            });
+        }
+
+        function closeViewQuiz() {
+            document.getElementById('view-quiz-modal').style.display = 'none';
+            viewingQuizId = null;
+        }
+
+        async function deleteViewingQuiz() {
+            if(!viewingQuizId) return;
+            if(confirm("Delete this quiz? Students won't be able to answer it anymore.")) {
+                await db.collection('raids').doc(viewingQuizId).delete();
+                closeViewQuiz();
+                notify("Quiz deleted successfully");
+            }
+        }
+
+        // QUIZ MANAGER FUNCTIONS
+        async function openQuizManager() {
+            const u = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+            db.collection('raids').where('grade','==',u.grade).where('teacher','==',u.name).onSnapshot(s => {
+                let quizzes = [];
+                s.forEach(doc => {
+                    quizzes.push({id: doc.id, data: doc.data()});
+                });
+                quizzes.sort((a, b) => (b.data.createdAt?.toMillis() || 0) - (a.data.createdAt?.toMillis() || 0));
+                
+                let managerHtml = "";
+                quizzes.forEach(quiz => {
+                    const r = quiz.data;
+                    const qCount = r.qs ? r.qs.length : 0;
+                    const responses = Object.keys(r.responses || {}).length;
+                    managerHtml += `<div class="card" style="background:#1c2128; margin-bottom:10px; padding:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+                            <div style="flex:1;">
+                                <div style="font-weight:bold; color:var(--primary); font-size:1.05rem;">${r.sub}</div>
+                                <div style="font-size:1.1rem; color:var(--text); margin-top:4px;">📋 ${r.topic}</div>
+                                <div style="font-size:0.7rem; color:#8b949e; margin-top:6px;">
+                                    📝 ${qCount} Questions | 👥 ${responses} Responses
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button class="btn" style="flex:1; padding:8px; font-size:0.8rem; background:var(--blue);" onclick="viewQuizFromManager('${quiz.id}')">👁️ View</button>
+                            <button class="btn" style="flex:1; padding:8px; font-size:0.8rem; background:var(--red);" onclick="deleteQuizFromManager('${quiz.id}')">🗑️ Delete</button>
+                            <button class="btn" style="flex:1; padding:8px; font-size:0.8rem; background:var(--green);" onclick="duplicateQuiz('${quiz.id}')">📋 Duplicate</button>
+                        </div>
+                    </div>`;
+                });
+                
+                if(quizzes.length === 0) {
+                    managerHtml = "<p style='text-align:center; opacity:0.5; padding:20px;'>No quizzes created yet</p>";
+                }
+                
+                document.getElementById('quiz-manager-list').innerHTML = managerHtml;
+            });
+            
+            document.getElementById('quiz-manager-modal').style.display = 'block';
+        }
+
+        function closeQuizManager() {
+            document.getElementById('quiz-manager-modal').style.display = 'none';
+        }
+
+        function viewQuizFromManager(quizId) {
+            db.collection('raids').doc(quizId).get().then(doc => {
+                if(!doc.exists) {
+                    notify("Quiz not found", "error");
+                    return;
+                }
+                const r = doc.data();
+                document.getElementById('quiz-view-title').innerText = r.topic;
+                document.getElementById('quiz-view-subject').innerText = r.sub;
+                document.getElementById('quiz-view-qcount').innerText = `${r.qs.length} Questions`;
+                
+                let qHtml = "";
+                r.qs.forEach((q, idx) => {
+                    qHtml += `<div style="background:#0d1117; padding:12px; border-radius:8px; margin-bottom:10px; border-left:3px solid var(--green);">
+                        <div style="font-weight:bold; margin-bottom:8px; color:var(--primary);">Q${idx + 1}: ${q.q}</div>
+                        <div style="font-size:0.75rem; color:#8b949e; margin-bottom:8px;">
+                            Type: ${q.type === 'text' ? 'Text Answer' : 'Multiple Choice'} | Time: ${q.time}s | XP: ${q.xp}
+                        </div>`;
+                    
+                    if(q.type === 'text') {
+                        qHtml += `<div style="background:#161b22; padding:8px; border-radius:4px; color:var(--green); border-left:2px solid var(--green);">
+                            <div style="font-size:0.7rem; color:#8b949e; margin-bottom:4px;">✓ Correct Answer:</div>
+                            <strong>${q.a}</strong>
+                        </div>`;
+                    } else {
+                        qHtml += `<div style="background:#161b22; padding:8px; border-radius:4px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.75rem; margin-bottom:8px;">
+                                <div>A: ${q.options.A}</div>
+                                <div>B: ${q.options.B}</div>
+                                <div>C: ${q.options.C}</div>
+                                <div>D: ${q.options.D}</div>
+                            </div>
+                            <div style="color:var(--green); font-weight:bold; border-top:1px solid var(--border); padding-top:6px;">✓ Correct: <span style="color:var(--primary);">${q.correct}</span></div>
+                        </div>`;
+                    }
+                    qHtml += `</div>`;
+                });
+                
+                document.getElementById('quiz-questions-list').innerHTML = qHtml;
+                document.getElementById('view-quiz-modal').style.display = 'block';
+                closeQuizManager();
+            });
+        }
+
+        async function deleteQuizFromManager(quizId) {
+            if(confirm("Delete this quiz permanently? Students won't be able to answer it anymore.")) {
+                await db.collection('raids').doc(quizId).delete();
+                notify("Quiz deleted successfully ✓");
+                await openQuizManager();
+            }
+        }
+
+        async function duplicateQuiz(quizId) {
+            const doc = await db.collection('raids').doc(quizId).get();
+            if(!doc.exists) {
+                notify("Quiz not found", "error");
+                return;
+            }
+            const quizData = doc.data();
+            const newName = prompt("Enter new quiz name:", quizData.topic + " (Copy)");
+            if(!newName) return;
+            
+            const newQuiz = {
+                ...quizData,
+                topic: newName,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                responses: {}
+            };
+            
+            await db.collection('raids').add(newQuiz);
+            notify("Quiz duplicated successfully! ✓");
+            await openQuizManager();
+        }
+
+        // STUDENT LOGIC
+        function loadStudentUI(u) {
+            currentUserRole = 'student'; // Set role
+            switchScreen('scr-student');
+            // Make sure shop tab button is visible
+            const shopBtn = document.getElementById('shop-tab-btn');
+            if(shopBtn) {
+                shopBtn.style.display = 'inline-block';
+            }
+            
+            // Load inventory and setup listeners
+            loadInventory();
+            setupInventoryListener();
+            setupAdTracking(); // Initialize ad reward tracking
+            loadShopPrices(); // Load dynamic shop prices
+            loadStudentNotes(); // Load class notes
+            
+            // Setup real-time listener for student data (coins, XP, etc)
+            db.collection('users').doc(auth.currentUser.uid).onSnapshot(doc => {
+                if(doc.exists) {
+                    const userData = doc.data();
+                    // Update coins display
+                    const coinsElement = document.getElementById('s-coins');
+                    if(coinsElement && userData.points !== undefined) {
+                        coinsElement.innerText = userData.points;
+                    }
+                    // Update XP display
+                    const xp = userData.total_xp || 0;
+                    const t = tiers.find(x => xp >= x.min && xp < x.max) || tiers[0];
+                    const tierNameElement = document.getElementById('s-tier-name');
+                    if(tierNameElement) {
+                        tierNameElement.innerText = t.n;
+                    }
+                    const xpTextElement = document.getElementById('s-xp-text');
+                    if(xpTextElement) {
+                        xpTextElement.innerText = `${xp} / ${t.max} XP`;
+                    }
+                    const xpFillElement = document.getElementById('s-xp-fill');
+                    if(xpFillElement) {
+                        const progress = ((xp - t.min) / (t.max - t.min)) * 100;
+                        xpFillElement.style.width = progress + "%";
+                    }
+                    // Update title
+                    const titleElement = document.getElementById('s-title');
+                    if(titleElement) {
+                        titleElement.innerText = userData.title || '[The Novice]';
+                    }
+                    // Update avatar
+                    const avatarElement = document.getElementById('s-avatar-display');
+                    if(avatarElement && userData.avatar) {
+                        avatarElement.innerText = userData.avatar;
+                    }
+                    // Reload inventory when powerups change
+                    loadInventory();
+                }
+            }, err => {
+                console.error("Student data listener error:", err);
+            });
+            
+            document.getElementById('s-name').innerText = u.name;
+            document.getElementById('s-title').innerText = u.title;
+            document.getElementById('s-coins').innerText = u.points || 0;
+            document.getElementById('s-grade-display').innerText = `Class: ${u.grade}`;
+            document.getElementById('s-avatar-display').innerText = u.avatar || '👤';
+            document.getElementById('avatar-preview').innerText = u.avatar || '👤';
+            
+            const xp = u.total_xp || 0;
+            const t = tiers.find(x => xp >= x.min && xp < x.max) || tiers[0];
+            document.getElementById('s-tier-name').innerText = t.n;
+            const progress = ((xp - t.min) / (t.max - t.min)) * 100;
+            document.getElementById('s-xp-fill').style.width = progress + "%";
+            document.getElementById('s-xp-text').innerText = `${xp} / ${t.max} XP`;
+            
+            // Find next rank
+            const currentTierIndex = tiers.indexOf(t);
+            const nextTier = currentTierIndex < tiers.length - 1 ? tiers[currentTierIndex + 1] : tiers[tiers.length - 1];
+            document.getElementById('s-next-rank').innerText = nextTier.n;
+
+            // Listen for Raids - only from their grade (simplified query)
+            db.collection('raids').where('grade','==',u.grade).onSnapshot(s => {
+                try {
+                    const zone = document.getElementById('raid-zone');
+                    if(s.empty) { zone.innerHTML = "<p style='text-align:center; opacity:0.5'>Waiting for your teacher's quiz...</p>"; return; }
+                    let html = "";
+                    let quizzes = [];
+                    s.forEach(doc => {
+                        quizzes.push({id: doc.id, data: doc.data()});
+                    });
+                    // Sort by newest first
+                    quizzes.sort((a, b) => (b.data.createdAt?.toMillis() || 0) - (a.data.createdAt?.toMillis() || 0));
+                    
+                    quizzes.forEach(quiz => {
+                        if(u.completed && u.completed.includes(quiz.id)) return;
+                        const r = quiz.data;
+                        html += `<div class="card" style="border-color:var(--blue); border-left:4px solid var(--blue);">
+                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                                <div style="flex:1;">
+                                    <h4 style="margin:0 0 8px 0;">${r.sub}: ${r.topic}</h4>
+                                    <div style="font-size:0.75rem; color:#8b949e;">
+                                        👨‍🏫 ${r.teacher} | 📝 ${r.qs.length} Questions
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-gold" onclick="confirmStartQuiz('${quiz.id}', '${r.topic}')">Start Quiz</button>
+                        </div>`;
+                    });
+                    zone.innerHTML = html || "<div class='card' style='text-align:center'>All quizzes completed! ✅</div>";
+                } catch(e) {
+                    console.error("Error loading quizzes:", e);
+                    document.getElementById('raid-zone').innerHTML = "<p style='color:#8b949e; text-align:center;'>Unable to load quizzes. Check your connection.</p>";
+                }
+            }, err => {
+                console.error("Student quiz listener error:", err);
+                document.getElementById('raid-zone').innerHTML = "<p style='color:#8b949e; text-align:center;'>Unable to load quizzes.</p>";
+            });
+
+            // Listen for Logs (simplified)
+            db.collection('logs').where('grade','==',u.grade).onSnapshot(s => {
+                try {
+                    let logs = [];
+                    s.forEach(doc => {
+                        logs.push({time: doc.data().time, m: doc.data().m});
+                    });
+                    logs.sort((a, b) => (b.time || 0) - (a.time || 0));
+                    let logHtml = logs.slice(0, 5).map(d => {
+                        const matches = d.m.match(/(.+?) scored (\d+)\/(\d+) on (.+?)!/);
+                        if(matches) {
+                            const [, name, correct, total, topic] = matches;
+                            const percentage = Math.round((correct / total) * 100);
+                            const resultColor = correct == total ? 'var(--green)' : 'var(--blue)';
+                            return `<div style="background:#1c2128; padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid ${resultColor};">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <div>
+                                    <div style="font-weight:bold; color:var(--text);">${name}</div>
+                                    <div style="font-size:0.75rem; color:#8b949e;">${topic}</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:1.1rem; font-weight:bold; color:${resultColor};">${correct}/${total}</div>
+                                    <div style="font-size:0.7rem; color:#8b949e;">${percentage}%</div>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+                    return `<div style="padding:10px;">⚔️ ${d.m}</div>`;
+                }).join('');
+                document.getElementById('battle-log').innerHTML = logHtml || "<p style='text-align:center; opacity:0.5; padding:15px;'>No activity yet</p>";
+                } catch(e) {
+                    console.error("Error loading battle log:", e);
+                    document.getElementById('battle-log').innerHTML = "<p style='color:#8b949e; text-align:center;'>Unable to load battle log.</p>";
+                }
+            }, err => {
+                console.error("Logs listener error:", err);
+                document.getElementById('battle-log').innerHTML = "<p style='color:#8b949e; text-align:center;'>Unable to load battle log.</p>";
+            });
+
+            loadLeaderboard(u.grade);
+        }
+
+        function confirmStartQuiz(quizId, topicName) {
+            if(confirm(`Start the quiz: "${topicName}"?\n\nYou won't be able to take it again!`)) {
+                startQuiz(quizId);
+            }
+        }
+
+        function startQuiz(quizId) {
+            const quizSnap = db.collection('raids').doc(quizId);
+            quizSnap.get().then(async doc => {
+                const quiz = doc.data();
+                currentQuestionIndex = 0;
+                
+                // Get student's powerups
+                const userDoc = await db.collection('users').doc(auth.currentUser.uid).get();
+                const userData = userDoc.data();
+                const powerups = userData.powerups || {};
+                
+                currentQuizSession = {
+                    quizId, quiz, answers: [],
+                    powerups: { ...powerups },  // Copy current powerup counts
+                    usedPowerups: []
+                };
+                displayQuestion(quizId, quiz, 0);
+            });
+        }
+
+        function displayQuestion(quizId, quiz, idx) {
+            const q = quiz.qs[idx];
+            const zone = document.getElementById('raid-zone');
+            
+            if(!q) {
+                submitQuiz(quizId, quiz);
+                return;
+            }
+
+            clearInterval(activeTimer);
+            
+            // Get powerup counts
+            const powerups = currentQuizSession.powerups || {};
+            let powerupHtml = '<div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">';
+            
+            const powerupItems = {
+                'time_pause': { name: '⏸️ Pause', key: 'time_pause' },
+                'correct_answer': { name: '✅ Answer', key: 'correct_answer' },
+                'double_rewards': { name: '💰 Double', key: 'double_rewards' }
+            };
+            
+            Object.values(powerupItems).forEach(item => {
+                const count = powerups[item.key] || 0;
+                const disabled = count === 0;
+                powerupHtml += `<button class="btn" style="flex:1; padding:8px; font-size:0.75rem; background:${disabled ? '#555' : 'var(--primary)'}; color:${disabled ? '#999' : '#000'}; cursor:${disabled ? 'not-allowed' : 'pointer'};" onclick="${disabled ? '' : `usePowerupInQuiz('${item.key}')`}" ${disabled ? 'disabled' : ''}>
+                    ${item.name} <span style="background:var(--blue); padding:2px 6px; border-radius:4px; margin-left:4px; font-weight:bold;">${count}</span>
+                </button>`;
+            });
+            
+            powerupHtml += '</div>';
+            
+            let html = `${powerupHtml}<div class="card" style="border-color:var(--blue)">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0;">Question ${idx + 1} of ${quiz.qs.length}</h4>
+                    <div style="font-size:0.85rem; font-weight:bold; color:var(--primary);" id="timer-text">Time: ${q.time}s</div>
+                </div>
+                <div class="t-cont"><div id="t-bar"></div></div>
+                <p>${q.q}</p>`;
+
+            if(q.type === 'multiple') {
+                html += `<div class="choice-grid">
+                    <button class="choice-btn" onclick="submitMultipleChoice('${quizId}', 'A', '${q.correct}')">A: ${q.options.A}</button>
+                    <button class="choice-btn" onclick="submitMultipleChoice('${quizId}', 'B', '${q.correct}')">B: ${q.options.B}</button>
+                    <button class="choice-btn" onclick="submitMultipleChoice('${quizId}', 'C', '${q.correct}')">C: ${q.options.C}</button>
+                    <button class="choice-btn" onclick="submitMultipleChoice('${quizId}', 'D', '${q.correct}')">D: ${q.options.D}</button>
+                </div>`;
+            } else {
+                html += `<input type="text" id="ans-in" class="input" placeholder="Your Answer...">
+                        <button class="btn btn-gold" onclick="submitTextAnswer('${quizId}')">Submit</button>`;
+            }
+
+            html += `</div>`;
+            zone.innerHTML = html;
+            startTimer(q.time, quizId, quiz, idx);
+        }
+
+        function submitMultipleChoice(quizId, selectedOption, correctOption) {
+            clearInterval(activeTimer);
+            if(!currentQuizSession) return;
+            
+            const isCorrect = selectedOption === correctOption;
+            currentQuizSession.answers[currentQuestionIndex] = selectedOption;
+            
+            const zone = document.getElementById('raid-zone');
+            const q = currentQuizSession.quiz.qs[currentQuestionIndex];
+            const isLastQuestion = currentQuestionIndex === currentQuizSession.quiz.qs.length - 1;
+            const buttonText = isLastQuestion ? 'Finish Quiz ✓' : 'Next Question →';
+            
+            let resultHtml = `<div class="card" style="border-color:${isCorrect ? 'var(--green)' : 'var(--red)'}; border-left: 4px solid ${isCorrect ? 'var(--green)' : 'var(--red)'};">
+                <div style="text-align:center; margin-bottom:15px;">
+                    <div style="font-size:2.5rem; margin-bottom:10px;">${isCorrect ? '✅ CORRECT!' : '❌ WRONG!'}</div>
+                    <div style="font-size:1.1rem; color:var(--primary); font-weight:bold;">${isCorrect ? `+${q.xp} XP  +${Math.floor(q.xp/2)} Coins` : `+0 XP`}</div>
+                </div>
+                ${!isCorrect ? `<div style="background:#1c2128; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <div style="font-size:0.75rem; color:#8b949e; margin-bottom:5px;">Correct Answer:</div>
+                    <div style="font-weight:bold; color:var(--green);">${correctOption}: ${q.options[correctOption]}</div>
+                </div>` : ''}
+                <button class="btn btn-gold" onclick="nextQuestion('${quizId}')">${buttonText}</button>
+            </div>`;
+            
+            zone.innerHTML = resultHtml;
+        }
+
+        function submitTextAnswer(quizId) {
+            clearInterval(activeTimer);
+            if(!currentQuizSession) return;
+            
+            const answer = document.getElementById('ans-in').value.toUpperCase().trim();
+            const q = currentQuizSession.quiz.qs[currentQuestionIndex];
+            const isCorrect = answer === q.a;
+            const isLastQuestion = currentQuestionIndex === currentQuizSession.quiz.qs.length - 1;
+            const buttonText = isLastQuestion ? 'Finish Quiz ✓' : 'Next Question →';
+            
+            currentQuizSession.answers[currentQuestionIndex] = answer;
+            
+            const zone = document.getElementById('raid-zone');
+            
+            let resultHtml = `<div class="card" style="border-color:${isCorrect ? 'var(--green)' : 'var(--red)'}; border-left: 4px solid ${isCorrect ? 'var(--green)' : 'var(--red)'};">
+                <div style="text-align:center; margin-bottom:15px;">
+                    <div style="font-size:2.5rem; margin-bottom:10px;">${isCorrect ? '✅ CORRECT!' : '❌ WRONG!'}</div>
+                    <div style="font-size:1.1rem; color:var(--primary); font-weight:bold;">${isCorrect ? `+${q.xp} XP  +${Math.floor(q.xp/2)} Coins` : `+0 XP`}</div>
+                </div>
+                ${!isCorrect ? `<div style="background:#1c2128; padding:10px; border-radius:8px; margin-bottom:10px;">
+                    <div style="font-size:0.75rem; color:#8b949e; margin-bottom:5px;">Correct Answer:</div>
+                    <div style="font-weight:bold; color:var(--green);">${q.a}</div>
+                </div>` : ''}
+                <button class="btn btn-gold" onclick="nextQuestion('${quizId}')">${buttonText}</button>
+            </div>`;
+            
+            zone.innerHTML = resultHtml;
+        }
+
+        function nextQuestion(quizId) {
+            currentQuestionIndex++;
+            if(currentQuestionIndex < currentQuizSession.quiz.qs.length) {
+                displayQuestion(quizId, currentQuizSession.quiz, currentQuestionIndex);
+            } else {
+                submitQuiz(quizId, currentQuizSession.quiz);
+            }
+        }
+
+        async function submitQuiz(quizId, quiz) {
+            clearInterval(activeTimer);
+            if(!currentQuizSession) return;
+            const answers = currentQuizSession.answers;
+            
+            let score = 0;
+            let totalXp = 0;
+            let totalCoins = 0;
+            
+            answers.forEach((ans, idx) => {
+                const q = quiz.qs[idx];
+                let correct = false;
+                if(q.type === 'text') {
+                    correct = ans === q.a;
+                } else {
+                    correct = ans === q.correct;
+                }
+                if(correct) {
+                    score++;
+                    totalXp += q.xp;
+                    totalCoins += q.gold || Math.floor(q.xp / 2);
+                }
+            });
+
+            // Check if Double Rewards was used
+            const usedPowerups = currentQuizSession.usedPowerups || [];
+            let doubleRewardUsed = false;
+            if(usedPowerups.includes('double_rewards')) {
+                totalXp *= 2;
+                totalCoins *= 2;
+                doubleRewardUsed = true;
+            }
+
+            try {
+                const uRef = db.collection('users').doc(auth.currentUser.uid);
+                await uRef.update({
+                    total_xp: firebase.firestore.FieldValue.increment(totalXp),
+                    points: firebase.firestore.FieldValue.increment(totalCoins),
+                    completed: firebase.firestore.FieldValue.arrayUnion(quizId)
+                });
+
+                const me = (await uRef.get()).data();
+                
+                // Try to log, but don't fail if logs collection has permission issues
+                try {
+                    await db.collection('logs').add({
+                        m: `${me.name} scored ${score}/${quiz.qs.length} on ${quiz.topic}!`,
+                        grade: me.grade,
+                        time: Date.now()
+                    });
+                } catch(logError) {
+                    console.log("Log write skipped (permission issue):", logError.message);
+                }
+
+                let rewardText = `<div style="color:var(--green);">+${totalXp} XP</div><div style="color:var(--primary);">+${totalCoins} Coins</div>`;
+                if(doubleRewardUsed) {
+                    rewardText += `<div style="color:var(--primary); font-weight:bold; margin-top:8px;">💰 Double Rewards Active!</div>`;
+                }
+
+                const zone = document.getElementById('raid-zone');
+                zone.innerHTML = `<div class="card" style="border-color:var(--blue); text-align:center;">
+                    <h3>Quiz Complete! 🎉</h3>
+                    <div style="font-size:1.3rem; margin:15px 0;">
+                        <div style="color:var(--primary); font-weight:bold;">Score: ${score}/${quiz.qs.length}</div>
+                        <div style="margin-top:10px; font-size:1.1rem;">
+                            ${rewardText}
+                        </div>
+                    </div>
+                    <p style="color:#8b949e; margin-bottom:15px;">Great job! You've completed this quiz.</p>
+                    <button class="btn btn-gold" onclick="goBackToHome()">Back to Home 🏠</button>
+                </div>`;
+
+                // Update UI immediately with new coins and XP
+                if(document.getElementById('s-coins')) {
+                    const currentCoins = parseInt(document.getElementById('s-coins').innerText) || 0;
+                    document.getElementById('s-coins').innerText = currentCoins + totalCoins;
+                }
+
+                currentQuizSession = null;
+            } catch(e) {
+                notify("Error submitting quiz: " + e.message, "error");
+                console.error("Submit quiz error:", e);
+            }
+        }
+
+        async function buyTitle(title, price) {
+            if(!confirm(`Buy "${title}" for ${price} coins?`)) return;
+            
+            const uRef = db.collection('users').doc(auth.currentUser.uid);
+            const u = (await uRef.get()).data();
+            if(u.points >= price) {
+                await uRef.update({ title: `[${title}]`, points: firebase.firestore.FieldValue.increment(-price) });
+                // Update UI immediately
+                const newCoins = u.points - price;
+                document.getElementById('s-coins').innerText = newCoins;
+                notify("Title Equipped! ✨");
+            } else { notify("Not enough coins!", "error"); }
+        }
+
+        async function buyAvatar(avatar) {
+            const price = 50;
+            if(!confirm(`Buy this avatar for ${price} coins?`)) return;
+            
+            const uRef = db.collection('users').doc(auth.currentUser.uid);
+            const u = (await uRef.get()).data();
+            if(u.points >= price) {
+                await uRef.update({ avatar: avatar, points: firebase.firestore.FieldValue.increment(-price) });
+                // Update UI immediately
+                document.getElementById('s-avatar-display').innerText = avatar;
+                document.getElementById('avatar-preview').innerText = avatar;
+                const newCoins = u.points - price;
+                document.getElementById('s-coins').innerText = newCoins;
+                notify("Avatar updated! 🎨");
+            } else { notify("Not enough coins!", "error"); }
+        }
+
+        async function loadLeaderboard(grade) {
+            const s = await db.collection('users').where('grade','==',grade).get();
+            let students = [];
+            s.forEach(doc => {
+                if(doc.data().role === 'student') {
+                    students.push(doc.data());
+                }
+            });
+            // Sort by XP descending
+            students.sort((a, b) => (b.total_xp || 0) - (a.total_xp || 0));
+            
+            let html = "";
+            students.forEach((x, i) => {
+                const t = tiers.find(v => x.total_xp >= v.min && x.total_xp < v.max);
+                // Check if student has a purchased title (glow effect)
+                const hasGlow = x.title && x.title !== '[Novice]' && x.title !== '[The Novice]';
+                
+                // Get aura color - default to primary (gold) if they have glow
+                let auraColor = 'var(--primary)'; // Default gold
+                if(x.aura_color) {
+                    auraColor = x.aura_color; // Use their purchased color
+                }
+                
+                const glowStyle = hasGlow ? `style="color:${auraColor}; text-shadow:0 0 10px ${auraColor}, 0 0 20px ${auraColor}; font-weight:bold;"` : "";
+                const avatarEmoji = x.avatar || '👤';
+                
+                html += `<div class="rank-row">
+                    <span class="rank-num">#${i+1}</span>
+                    <span style="font-size:1.5rem; margin-right:8px;">${avatarEmoji}</span>
+                    <span style="font-size:1.5rem; margin-right:8px;">${t.i}</span>
+                    <div class="rank-info">
+                        <div class="rank-name" ${glowStyle}>${x.name} ${hasGlow ? x.title : ''}</div>
+                        <div style="font-size:0.75rem; color:var(--blue); margin:4px 0;">${t.n}</div>
+                        <div class="rank-xp">${x.total_xp} XP</div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('s-leaderboard').innerHTML = html || "<p style='text-align:center; opacity:0.5'>No students yet</p>";
+        }
+
+        async function loadInventory() {
+            try {
+                const u = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+                const powerups = u.powerups || {};
+                
+                const powerupItems = {
+                    'time_pause': { name: 'Time Pause', emoji: '⏸️' },
+                    'correct_answer': { name: 'Correct Answer', emoji: '✅' },
+                    'double_rewards': { name: 'Double Rewards', emoji: '💰' }
+                };
+                
+                let html = '';
+                let hasItems = false;
+                
+                Object.keys(powerupItems).forEach(key => {
+                    const count = powerups[key] || 0;
+                    if(count > 0) {
+                        hasItems = true;
+                        const item = powerupItems[key];
+                        html += `<div style="background:#1c2128; padding:12px; border-radius:8px; position:relative; text-align:center;">
+                            <div style="font-size:2rem; margin-bottom:8px;">${item.emoji}</div>
+                            <div style="font-weight:bold; color:var(--primary); margin-bottom:4px;">${item.name}</div>
+                            <div style="font-size:2rem; font-weight:bold; color:var(--green); margin:8px 0;">${count}</div>
+                            <span style="position:absolute; top:4px; right:6px; background:var(--green); color:#000; padding:4px 8px; border-radius:50%; font-size:0.8rem; font-weight:bold;">${count}</span>
+                        </div>`;
+                    }
+                });
+                
+                if(!hasItems) {
+                    html = '<p style="grid-column:1/-1; text-align:center; color:#8b949e; padding:20px;">No items yet. Buy from the shop!</p>';
+                }
+                
+                document.getElementById('s-inventory-list').innerHTML = html;
+            } catch(e) {
+                console.error("Error loading inventory:", e);
+            }
+        }
+
+        async function setupInventoryListener() {
+            try {
+                const uid = auth.currentUser.uid;
+                db.collection('users').doc(uid).onSnapshot(doc => {
+                    if(doc.exists) {
+                        loadInventory();
+                    }
+                }, err => {
+                    console.error("Inventory listener error:", err);
+                });
+            } catch(e) {
+                console.error("Error setting up inventory listener:", e);
+            }
+        }
+
+        async function usePowerup(powerupKey) {
+            try {
+                const uRef = db.collection('users').doc(auth.currentUser.uid);
+                const u = (await uRef.get()).data();
+                const powerups = u.powerups || {};
+                
+                if(!powerups[powerupKey] || powerups[powerupKey] <= 0) {
+                    notify("You don't have this item!", "error");
+                    return;
+                }
+                
+                // Decrease count by 1
+                powerups[powerupKey] = (powerups[powerupKey] || 0) - 1;
+                
+                await uRef.update({ powerups });
+                
+                // Store used powerup in current quiz session
+                if(currentQuizSession) {
+                    currentQuizSession.usedPowerups = currentQuizSession.usedPowerups || [];
+                    currentQuizSession.usedPowerups.push(powerupKey);
+                }
+                
+                notify(`${powerupKey.replace(/_/g, ' ').toUpperCase()} used!`);
+                loadInventory();
+                
+                return true;
+            } catch(e) {
+                notify("Error using powerup: " + e.message, "error");
+                console.error(e);
+                return false;
+            }
+        }
+
+        async function usePowerupInQuiz(powerupKey) {
+            try {
+                if(!currentQuizSession) {
+                    notify("No active quiz!", "error");
+                    return;
+                }
+                
+                const uRef = db.collection('users').doc(auth.currentUser.uid);
+                const u = (await uRef.get()).data();
+                const powerups = u.powerups || {};
+                
+                if(!powerups[powerupKey] || powerups[powerupKey] <= 0) {
+                    notify("You don't have this item!", "error");
+                    return;
+                }
+                
+                // Decrease count by 1
+                powerups[powerupKey] = (powerups[powerupKey] || 0) - 1;
+                
+                await uRef.update({ powerups });
+                
+                // Apply powerup effect
+                const powerupNames = {
+                    'time_pause': 'Time Pause',
+                    'correct_answer': 'Correct Answer',
+                    'double_rewards': 'Double Rewards'
+                };
+                
+                // Update quiz session powerups
+                currentQuizSession.powerups = currentQuizSession.powerups || {};
+                currentQuizSession.powerups[powerupKey] = (currentQuizSession.powerups[powerupKey] || 0) - 1;
+                
+                // Add to used powerups
+                currentQuizSession.usedPowerups = currentQuizSession.usedPowerups || [];
+                currentQuizSession.usedPowerups.push(powerupKey);
+                
+                notify(`⚡ ${powerupNames[powerupKey]} activated!`);
+                
+                // Refresh the question display to update powerup counts
+                const q = currentQuizSession.quiz.qs[currentQuestionIndex];
+                displayQuestion(currentQuizSession.quizId, currentQuizSession.quiz, currentQuestionIndex);
+                
+                // Handle powerup logic
+                if(powerupKey === 'time_pause') {
+                    // Add 30 seconds to timer
+                    notify('⏸️ +30 seconds added!');
+                } else if(powerupKey === 'correct_answer') {
+                    notify('✅ Your next answer will be marked correct!');
+                } else if(powerupKey === 'double_rewards') {
+                    notify('💰 Next quiz rewards will be doubled!');
+                }
+                
+                loadInventory();
+            } catch(e) {
+                notify("Error using powerup: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        function startTimer(seconds, quizId, quiz, idx) {
+            let timeLeft = seconds;
+            const updateTimer = () => {
+                document.getElementById('timer-text').innerText = `Time: ${timeLeft}s`;
+                if(timeLeft <= 5) {
+                    document.getElementById('timer-text').style.color = 'var(--red)';
+                }
+                timeLeft--;
+                if(timeLeft < 0) {
+                    clearInterval(activeTimer);
+                    notify("Time's up! Auto-submitting...", "error");
+                    if(currentQuizSession) {
+                        // Mark as blank answer
+                        currentQuizSession.answers[currentQuestionIndex] = '';
+                        currentQuestionIndex++;
+                        if(currentQuestionIndex < quiz.qs.length) {
+                            displayQuestion(quizId, quiz, currentQuestionIndex);
+                        } else {
+                            submitQuiz(quizId, quiz);
+                        }
+                    }
+                }
+            };
+            updateTimer();
+            activeTimer = setInterval(updateTimer, 1000);
+        }
+
+        function playSfx(type) {
+            // Add sound effects if available
+        }
+
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function switchStudentTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tab).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        function goBackToHome() {
+            // Go back to the Quizzes tab (home screen for students)
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            // Make sure shop tab button is visible
+            const shopBtn = document.getElementById('shop-tab-btn');
+            if(shopBtn) {
+                shopBtn.style.display = 'inline-block';
+            }
+            
+            // Show quizzes tab
+            document.getElementById('tab-quizzes').style.display = 'block';
+            const quizzesBtn = document.querySelector('[onclick="switchStudentTab(\'quizzes\')"]');
+            if(quizzesBtn) quizzesBtn.classList.add('active');
+            
+            // Reload the quiz list from Firebase
+            const u = auth.currentUser;
+            if(u) {
+                db.collection('users').doc(u.uid).get().then(doc => {
+                    const userData = doc.data();
+                    // Reload quizzes
+                    db.collection('raids').where('grade','==',userData.grade).onSnapshot(s => {
+                        const zone = document.getElementById('raid-zone');
+                        if(s.empty) { 
+                            zone.innerHTML = "<p style='text-align:center; opacity:0.5'>Waiting for your teacher's quiz...</p>"; 
+                            return; 
+                        }
+                        let html = "";
+                        let quizzes = [];
+                        s.forEach(doc => {
+                            quizzes.push({id: doc.id, data: doc.data()});
+                        });
+                        quizzes.sort((a, b) => (b.data.createdAt?.toMillis() || 0) - (a.data.createdAt?.toMillis() || 0));
+                        
+                        quizzes.forEach(quiz => {
+                            if(userData.completed && userData.completed.includes(quiz.id)) return;
+                            const r = quiz.data;
+                            html += `<div class="card" style="border-color:var(--blue); border-left:4px solid var(--blue);">
+                                <div style="display:flex; justify-content:space-between; align-items:start;">
+                                    <div style="flex:1;">
+                                        <h4 style="margin:0 0 8px 0;">${r.sub}: ${r.topic}</h4>
+                                        <div style="font-size:0.75rem; color:#8b949e;">
+                                            👨‍🏫 ${r.teacher} | 📝 ${r.qs.length} Questions
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-gold" onclick="confirmStartQuiz('${quiz.id}', '${r.topic}')">Start Quiz</button>
+                            </div>`;
+                        });
+                        zone.innerHTML = html || "<div class='card' style='text-align:center'>All quizzes completed! ✅</div>";
+                    }, err => {
+                        console.error("Error loading quizzes:", err);
+                    });
+                });
+            }
+        }
+
+        // Shop Item Modal Functions
+        let currentShopItem = null;
+        let selectedAuraColor = null;
+        let selectedAuraColorName = null;
+        
+        function selectAuraColor(color, colorName) {
+            selectedAuraColor = color;
+            selectedAuraColorName = colorName;
+            document.getElementById('selected-color').innerText = `✓ ${colorName} selected`;
+            document.getElementById('selected-color').style.color = color;
+        }
+        
+        async function loadShopPrices() {
+            try {
+                const userData = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+                const grade = userData.grade;
+                
+                // Get prices from shopPrices collection by grade
+                const pricesDoc = await db.collection('shopPrices').doc(grade).get();
+                
+                if(pricesDoc.exists) {
+                    const prices = pricesDoc.data().prices;
+                    
+                    // Update all shop item buttons with new prices
+                    const shopItems = [
+                        { id: 'radiant-btn', key: 'The Radiant' },
+                        { id: 'bold-btn', key: 'The Bold' },
+                        { id: 'scholar-btn', key: 'The Scholar' },
+                        { id: 'wise-btn', key: 'The Wise' }
+                    ];
+                    
+                    shopItems.forEach(item => {
+                        const btn = document.querySelector(`[onclick*="${item.key}"]`);
+                        if(btn && prices[item.key]) {
+                            // Update the onclick with new price
+                            btn.onclick = () => showShopItem(item.key, prices[item.key], btn.innerHTML.split('<br>')[0], '');
+                        }
+                    });
+                    
+                    // Update powerup items
+                    const powerupItems = [
+                        { key: 'Time Pause', emoji: '⏸️' },
+                        { key: 'Correct Answer', emoji: '✅' },
+                        { key: 'Name Aura', emoji: '✨' },
+                        { key: 'Double Rewards', emoji: '💰' },
+                        { key: 'Homework Pass', emoji: '📝' }
+                    ];
+                    
+                    powerupItems.forEach(item => {
+                        const btn = document.querySelector(`[onclick*="${item.key}"]`);
+                        if(btn && prices[item.key]) {
+                            btn.onclick = () => showShopItem(item.key, prices[item.key], item.emoji, '');
+                        }
+                    });
+                }
+            } catch(e) {
+                console.error("Error loading shop prices:", e);
+            }
+        }
+
+        function showShopItem(name, price, emoji, description) {
+            // Only show shop modal for students, not teachers
+            if(currentUserRole !== 'student') {
+                return;
+            }
+            
+            currentShopItem = { name, price, emoji };
+            document.getElementById('shop-item-emoji').innerText = emoji;
+            document.getElementById('shop-item-name').innerText = name;
+            document.getElementById('shop-item-desc').innerText = description;
+            document.getElementById('shop-item-price').innerText = `${price} Coins`;
+            
+            // Show color picker only for Name Aura item
+            const colorPickerDiv = document.getElementById('aura-color-picker');
+            if(name === 'Name Aura') {
+                colorPickerDiv.style.display = 'block';
+                selectedAuraColor = null;
+                selectedAuraColorName = null;
+                document.getElementById('selected-color').innerText = 'Select a color';
+                document.getElementById('selected-color').style.color = 'var(--primary)';
+            } else {
+                colorPickerDiv.style.display = 'none';
+            }
+            
+            const modal = document.getElementById('shop-item-modal');
+            modal.style.display = 'block';
+            console.log('Modal shown for:', name);
+        }
+
+        function closeShopModal() {
+            document.getElementById('shop-item-modal').style.display = 'none';
+            currentShopItem = null;
+        }
+
+        async function confirmShopBuy() {
+            if(!currentShopItem) return;
+            const itemName = currentShopItem.name;
+            
+            // Check if it's Name Aura - requires color selection
+            if(itemName === 'Name Aura') {
+                if(!selectedAuraColor) {
+                    notify("Please select an aura color!", "error");
+                    return;
+                }
+                await buyNameAura(currentShopItem.price, selectedAuraColor);
+            }
+            // Check if it's other title items
+            else if(['The Radiant', 'The Bold', 'The Scholar', 'The Wise'].includes(itemName)) {
+                await buyTitle(itemName, currentShopItem.price);
+            }
+            // Check if it's a powerup item
+            else if(['Time Pause', 'Correct Answer', 'Double Rewards'].includes(itemName)) {
+                await buyPowerup(itemName, currentShopItem.price);
+            }
+            // Check if it's Homework Pass (needs teacher notification)
+            else if(itemName === 'Homework Pass') {
+                await buyHomeworkPass(currentShopItem.price);
+            }
+            closeShopModal();
+        }
+
+        async function buyNameAura(price, auraColor) {
+            const uRef = db.collection('users').doc(auth.currentUser.uid);
+            const u = (await uRef.get()).data();
+            if(u.points >= price) {
+                await uRef.update({ 
+                    aura_color: auraColor,
+                    points: firebase.firestore.FieldValue.increment(-price) 
+                });
+                const newCoins = u.points - price;
+                document.getElementById('s-coins').innerText = newCoins;
+                notify(`Name Aura purchased with ${selectedAuraColorName} color! ✨`);
+            } else { 
+                notify("Not enough coins!", "error"); 
+            }
+        }
+
+        async function buyPowerup(itemName, price) {
+            const uRef = db.collection('users').doc(auth.currentUser.uid);
+            const u = (await uRef.get()).data();
+            if(u.points >= price) {
+                const powerupKey = itemName.replace(/\s+/g, '_').toLowerCase();
+                const userPowerups = u.powerups || {};
+                userPowerups[powerupKey] = (userPowerups[powerupKey] || 0) + 1;
+                
+                await uRef.update({ 
+                    powerups: userPowerups,
+                    points: firebase.firestore.FieldValue.increment(-price) 
+                });
+                const newCoins = u.points - price;
+                document.getElementById('s-coins').innerText = newCoins;
+                notify(`${itemName} purchased! You now have ${userPowerups[powerupKey]} available.`);
+            } else { 
+                notify("Not enough coins!", "error"); 
+            }
+        }
+
+        async function buyHomeworkPass(price) {
+            const uRef = db.collection('users').doc(auth.currentUser.uid);
+            const u = (await uRef.get()).data();
+            if(u.points >= price) {
+                // Add homework pass to user
+                const passes = u.homework_passes || 0;
+                await uRef.update({ 
+                    homework_passes: passes + 1,
+                    points: firebase.firestore.FieldValue.increment(-price) 
+                });
+                
+                // Notify teacher
+                const classData = (await db.collection('classes').doc(u.grade).get()).data();
+                const teacherDocs = await db.collection('users').where('role', '==', 'teacher').where('grade', '==', u.grade).get();
+                
+                teacherDocs.forEach(async doc => {
+                    await db.collection('notifications').add({
+                        teacherId: doc.id,
+                        studentName: u.name,
+                        message: `${u.name} purchased a Homework Pass (1 available)`,
+                        type: 'homework_pass',
+                        timestamp: new Date(),
+                        read: false
+                    });
+                });
+                
+                const newCoins = u.points - price;
+                document.getElementById('s-coins').innerText = newCoins;
+                notify("Homework Pass purchased! Teacher notified.");
+            } else { 
+                notify("Not enough coins!", "error"); 
+            }
+        }
+
+        async function giveTitle(id) {
+            const t = prompt("Enter Title (e.g. The Brave):");
+            if(t) await db.collection('users').doc(id).update({ title: `[${t}]` });
+        }
+
+        async function kick(id) {
+            if(confirm("Remove student?")) await db.collection('users').doc(id).delete();
+        }
+
+        async function removeSub(s) {
+            const u = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+            await db.collection('classes').doc(u.grade).update({ subjects: firebase.firestore.FieldValue.arrayRemove(s) });
+        }
+
+        async function saveRewardSettings() {
+            const baseXp = parseInt(document.getElementById('t-base-xp').value) || 100;
+            const baseGold = parseInt(document.getElementById('t-base-gold').value) || 50;
+            const xpBonus = parseInt(document.getElementById('t-xp-bonus').value) || 150;
+            const goldBonus = parseInt(document.getElementById('t-gold-bonus').value) || 100;
+
+            try {
+                const u = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+                await db.collection('users').doc(auth.currentUser.uid).update({
+                    rewardSettings: {
+                        baseXp: baseXp,
+                        baseGold: baseGold,
+                        xpBonus: xpBonus,
+                        goldBonus: goldBonus
+                    }
+                });
+                document.getElementById('reward-status').innerText = '✓ Saved immediately!';
+                document.getElementById('reward-status').style.color = 'var(--green)';
+                setTimeout(() => {
+                    document.getElementById('reward-status').innerText = '';
+                }, 2000);
+                notify("Reward settings saved! ✓");
+            } catch(e) {
+                notify("Error saving settings: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        async function resetStudentRanks() {
+            if(!confirm("Are you SURE? This will reset ALL students' XP and coins to 0. This action cannot be undone!")) {
+                return;
+            }
+            if(!confirm("This is permanent! Click OK again to confirm.")) {
+                return;
+            }
+            
+            try {
+                const u = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+                const students = await db.collection('users').where('grade', '==', u.grade).where('role', '==', 'student').get();
+                
+                const batch = db.batch();
+                students.forEach(doc => {
+                    batch.update(doc.ref, {
+                        total_xp: 0,
+                        points: 0,
+                        completed: []
+                    });
+                });
+                await batch.commit();
+                notify("All student ranks have been reset! 🔄");
+            } catch(e) {
+                notify("Error resetting ranks: " + e.message, "error");
+            }
+        }
+
+        function toggleStudentRoster() {
+            const roster = document.getElementById('t-roster');
+            const toggle = document.getElementById('roster-toggle');
+            if(roster.style.display === 'none') {
+                roster.style.display = 'block';
+                toggle.innerText = '▲';
+            } else {
+                roster.style.display = 'none';
+                toggle.innerText = '▼';
+            }
+        }
+
+        async function giftRewards() {
+            const selectedStudent = document.getElementById('t-selected-student-id').value;
+            const giftXp = parseInt(document.getElementById('t-gift-xp').value) || 0;
+            const giftCoins = parseInt(document.getElementById('t-gift-coins').value) || 0;
+
+            console.log("Selected Student ID:", selectedStudent);
+            console.log("Gift XP:", giftXp, "Gift Coins:", giftCoins);
+
+            if(giftXp === 0 && giftCoins === 0) {
+                notify("Enter at least some XP or coins!", "error");
+                return;
+            }
+
+            // Check if student is selected
+            if(!selectedStudent || selectedStudent === '') {
+                notify("Select a student or click 'Gift to ALL Students'!", "error");
+                return;
+            }
+
+            try {
+                const teacherData = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+
+                if(selectedStudent === 'ALL') {
+                    // Gift to all students in class
+                    const students = await db.collection('users').where('grade', '==', teacherData.grade).where('role', '==', 'student').get();
+                    const batch = db.batch();
+                    
+                    students.forEach(doc => {
+                        batch.update(doc.ref, {
+                            total_xp: firebase.firestore.FieldValue.increment(giftXp),
+                            points: firebase.firestore.FieldValue.increment(giftCoins)
+                        });
+                    });
+                    
+                    await batch.commit();
+                    document.getElementById('gift-status').innerText = `✓ Gifted to all ${students.size} students!`;
+                    document.getElementById('gift-status').style.color = 'var(--green)';
+                    notify(`Gifted +${giftXp} XP and +${giftCoins} coins to all students! 🎁`);
+                } else {
+                    // Gift to single student
+                    const studentRef = db.collection('users').doc(selectedStudent);
+                    const studentData = (await studentRef.get()).data();
+                    
+                    if(!studentData) {
+                        notify("Student not found!", "error");
+                        return;
+                    }
+
+                    await studentRef.update({
+                        total_xp: firebase.firestore.FieldValue.increment(giftXp),
+                        points: firebase.firestore.FieldValue.increment(giftCoins)
+                    });
+
+                    document.getElementById('gift-status').innerText = `✓ Gifted to ${studentData.name}!`;
+                    document.getElementById('gift-status').style.color = 'var(--green)';
+                    notify(`Gifted +${giftXp} XP and +${giftCoins} coins to ${studentData.name}! 🎁`);
+                }
+
+                setTimeout(() => {
+                    document.getElementById('gift-status').innerText = '';
+                }, 3000);
+            } catch(e) {
+                notify("Error gifting rewards: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        // ===== TEACHER NOTES FUNCTIONS =====
+        
+        async function saveTeacherNote() {
+            try {
+                const subject = document.getElementById('t-note-subject').value.trim();
+                const content = document.getElementById('t-note-content').value.trim();
+                
+                if(!subject) {
+                    notify("Please enter a subject for the note!", "error");
+                    return;
+                }
+                
+                if(!content) {
+                    notify("Please write your note!", "error");
+                    return;
+                }
+                
+                const grade = (await db.collection('users').doc(auth.currentUser.uid).get()).data().grade;
+                
+                // Save note to Firestore
+                const notesRef = db.collection('notes');
+                const noteDoc = await notesRef.add({
+                    subject: subject,
+                    content: content,
+                    grade: grade,
+                    teacherId: auth.currentUser.uid,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
+                
+                // Clear form
+                document.getElementById('t-note-subject').value = '';
+                document.getElementById('t-note-content').value = '';
+                
+                notify(`📝 Note posted: "${subject}"`, 'success');
+                loadTeacherNotes();
+                
+            } catch(e) {
+                notify("Error saving note: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        async function loadTeacherNotes() {
+            try {
+                const grade = (await db.collection('users').doc(auth.currentUser.uid).get()).data().grade;
+                
+                // Set up real-time listener for notes
+                db.collection('notes')
+                    .where('grade', '==', grade)
+                    .where('teacherId', '==', auth.currentUser.uid)
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot(snapshot => {
+                        const notesList = document.getElementById('t-notes-list');
+                        
+                        if(snapshot.empty) {
+                            notesList.innerHTML = '<p style="text-align:center; color:#8b949e; font-size:0.75rem;">No notes yet</p>';
+                            return;
+                        }
+                        
+                        let html = '';
+                        snapshot.forEach(doc => {
+                            const note = doc.data();
+                            const date = note.createdAt.toDate().toLocaleDateString();
+                            const preview = note.content.length > 40 ? note.content.substring(0, 40) + '...' : note.content;
+                            const noteId = doc.id;
+                            
+                            html += `
+                                <div style="background:#1c2128; padding:12px; border-radius:8px; margin-bottom:10px; border-left:3px solid var(--primary);">
+                                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+                                        <div style="flex:1; cursor:pointer;" onclick="openNoteBoardDirect(this)">
+                                            <div style="font-weight:bold; color:var(--primary); margin-bottom:4px; font-size:1rem;">${note.subject}</div>
+                                            <div style="font-size:0.75rem; color:#8b949e; margin-bottom:4px;">${preview}</div>
+                                            <div style="font-size:0.7rem; color:#666;">Click to view →</div>
+                                            <div hidden data-id="${noteId}" data-subject="${note.subject}" data-content="${note.content}" data-date="${date}"></div>
+                                        </div>
+                                        <div style="display:flex; gap:4px; white-space:nowrap;">
+                                            <button style="padding:6px 10px; font-size:0.85rem; background:var(--blue); color:#000; border:none; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="editNoteDirect(this)">✏️ Edit</button>
+                                            <button style="padding:6px 10px; font-size:0.85rem; background:var(--red); color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold;" onclick="deleteNoteDirect(this)">🗑️ Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        notesList.innerHTML = html;
+                    }, err => {
+                        console.error("Error loading teacher notes:", err);
+                    });
+            } catch(e) {
+                console.error("Error initializing teacher notes:", e);
+            }
+        }
+
+        async function editTeacherNote(noteId, oldSubject, oldContent) {
+            try {
+                // Show edit modal
+                document.getElementById('edit-note-modal').style.display = 'block';
+                document.getElementById('edit-note-id').value = noteId;
+                document.getElementById('edit-note-subject').value = oldSubject;
+                document.getElementById('edit-note-content').value = oldContent;
+                
+                // Focus on subject field
+                document.getElementById('edit-note-subject').focus();
+            } catch(e) {
+                notify("Error opening edit: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        async function saveEditedNote() {
+            try {
+                const noteId = document.getElementById('edit-note-id').value;
+                const newSubject = document.getElementById('edit-note-subject').value.trim();
+                const newContent = document.getElementById('edit-note-content').value.trim();
+                
+                if(!newSubject || !newContent) {
+                    notify("Subject and content cannot be empty!", "error");
+                    return;
+                }
+                
+                await db.collection('notes').doc(noteId).update({
+                    subject: newSubject,
+                    content: newContent,
+                    updatedAt: new Date()
+                });
+                
+                notify('✓ Note updated!', 'success');
+                closeEditNoteModal();
+                loadTeacherNotes();
+            } catch(e) {
+                notify("Error updating note: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        function closeEditNoteModal() {
+            document.getElementById('edit-note-modal').style.display = 'none';
+            document.getElementById('edit-note-id').value = '';
+            document.getElementById('edit-note-subject').value = '';
+            document.getElementById('edit-note-content').value = '';
+        }
+
+        async function deleteTeacherNote(noteId) {
+            try {
+                if(!confirm('Delete this note?')) return;
+                
+                await db.collection('notes').doc(noteId).delete();
+                notify('✓ Note deleted!', 'success');
+                loadTeacherNotes();
+            } catch(e) {
+                notify("Error deleting note: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        function openNoteBoardDirect(element) {
+            const dataDiv = element.querySelector('[data-id]');
+            if (!dataDiv) return;
+            
+            const noteId = dataDiv.getAttribute('data-id');
+            const subject = dataDiv.getAttribute('data-subject');
+            const content = dataDiv.getAttribute('data-content');
+            const date = dataDiv.getAttribute('data-date');
+            
+            openNoteBoard(noteId, subject, content, date);
+        }
+
+        function editNoteDirect(button) {
+            event.stopPropagation();
+            // Find the parent container and get the hidden data div
+            const container = button.closest('div[style*="background"]');
+            if (!container) {
+                console.error("Could not find container");
+                return;
+            }
+            const dataDiv = container.querySelector('[data-id]');
+            if (!dataDiv) {
+                console.error("Could not find data div");
+                return;
+            }
+            
+            const noteId = dataDiv.getAttribute('data-id');
+            const subject = dataDiv.getAttribute('data-subject');
+            const content = dataDiv.getAttribute('data-content');
+            
+            console.log("Editing note:", noteId, subject);
+            editTeacherNote(noteId, subject, content);
+        }
+
+        function deleteNoteDirect(button) {
+            event.stopPropagation();
+            // Find the parent container and get the hidden data div
+            const container = button.closest('div[style*="background"]');
+            if (!container) {
+                console.error("Could not find container");
+                return;
+            }
+            const dataDiv = container.querySelector('[data-id]');
+            if (!dataDiv) {
+                console.error("Could not find data div");
+                return;
+            }
+            
+            const noteId = dataDiv.getAttribute('data-id');
+            console.log("Deleting note:", noteId);
+            deleteTeacherNote(noteId);
+        }
+        
+        // ===== STUDENT NOTES DISPLAY =====
+        
+        function openNoteBoard(noteId, subject, content, date) {
+            currentNoteId = noteId;
+            document.getElementById('note-board-title').innerText = `📝 ${subject}`;
+            document.getElementById('note-board-content').innerText = content;
+            document.getElementById('note-board-date').innerText = date;
+            
+            // Show edit/delete buttons only for teachers
+            const actionsDiv = document.getElementById('note-board-actions');
+            if(currentUserRole === 'teacher') {
+                actionsDiv.style.display = 'flex';
+            } else {
+                actionsDiv.style.display = 'none';
+            }
+            
+            document.getElementById('notes-board-modal').style.display = 'block';
+        }
+
+        function closeNoteBoard() {
+            document.getElementById('notes-board-modal').style.display = 'none';
+            currentNoteId = null;
+        }
+
+        function editCurrentNote() {
+            if(!currentNoteId) return;
+            // This will be called from teacher side
+            const subject = prompt('Edit subject:');
+            if(!subject) return;
+            const content = prompt('Edit note:');
+            if(!content) return;
+            editTeacherNote(currentNoteId, subject, content);
+        }
+
+        function deleteCurrentNote() {
+            if(!currentNoteId) return;
+            deleteTeacherNote(currentNoteId);
+            closeNoteBoard();
+        }
+        
+        async function loadStudentNotes() {
+            try {
+                const userData = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+                const grade = userData.grade;
+                
+                // Set up real-time listener for notes
+                db.collection('notes')
+                    .where('grade', '==', grade)
+                    .orderBy('createdAt', 'desc')
+                    .onSnapshot(snapshot => {
+                        const notesList = document.getElementById('s-notes-list');
+                        
+                        if(snapshot.empty) {
+                            notesList.innerHTML = '<p style="text-align:center; color:#8b949e; font-size:0.75rem;">No notes from your teacher yet</p>';
+                            return;
+                        }
+                        
+                        let html = '';
+                        snapshot.forEach(doc => {
+                            const note = doc.data();
+                            const date = note.createdAt.toDate().toLocaleDateString();
+                            const preview = note.content.length > 50 ? note.content.substring(0, 50) + '...' : note.content;
+                            const noteId = doc.id;
+                            
+                            html += `
+                                <div style="background:#1c2128; padding:12px; border-radius:8px; margin-bottom:10px; border-left:3px solid var(--blue); cursor:pointer;" onclick="openNoteBoardDirect(this)">
+                                    <div style="font-weight:bold; color:var(--primary); margin-bottom:4px;">${note.subject}</div>
+                                    <div style="color:#8b949e; font-size:0.8rem; margin-bottom:8px;">${preview}</div>
+                                    <div style="font-size:0.7rem; color:#666;">Click to view full note →</div>
+                                    <div style="font-size:0.7rem; color:#8b949e; margin-top:4px;">${date}</div>
+                                    <div hidden data-id="${noteId}" data-subject="${note.subject}" data-content="${note.content}" data-date="${date}"></div>
+                                </div>
+                            `;
+                        });
+                        
+                        notesList.innerHTML = html;
+                    }, err => {
+                        console.error("Error loading student notes:", err);
+                    });
+            } catch(e) {
+                console.error("Error initializing student notes:", e);
+            }
+        }
+
+        async function saveShopPrices() {
+            try {
+                const teacherData = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+                const grade = teacherData.grade;
+                
+                const prices = {
+                    'The Radiant': parseInt(document.getElementById('price-radiant').value) || 500,
+                    'The Bold': parseInt(document.getElementById('price-bold').value) || 500,
+                    'The Scholar': parseInt(document.getElementById('price-scholar').value) || 600,
+                    'The Wise': parseInt(document.getElementById('price-wise').value) || 700,
+                    'Time Pause': parseInt(document.getElementById('price-pause').value) || 300,
+                    'Correct Answer': parseInt(document.getElementById('price-answer').value) || 250,
+                    'Name Aura': parseInt(document.getElementById('price-aura').value) || 200,
+                    'Double Rewards': parseInt(document.getElementById('price-double').value) || 400,
+                    'Homework Pass': parseInt(document.getElementById('price-homework').value) || 500
+                };
+
+                // Save to user's data
+                await db.collection('users').doc(auth.currentUser.uid).update({
+                    shop_prices: prices
+                });
+
+                // Also save to a shared 'shopPrices' collection by grade so students can read it
+                await db.collection('shopPrices').doc(grade).set({
+                    prices: prices,
+                    updatedAt: new Date(),
+                    teacherId: auth.currentUser.uid
+                });
+
+                document.getElementById('price-status').innerText = '✓ Shop prices updated for all students!';
+                document.getElementById('price-status').style.color = 'var(--green)';
+                notify("Shop prices updated successfully! 💰");
+
+                setTimeout(() => {
+                    document.getElementById('price-status').innerText = '';
+                }, 3000);
+            } catch(e) {
+                notify("Error saving prices: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        async function populateStudentDropdown() {
+            try {
+                const studentList = document.getElementById('t-student-list');
+                
+                // Toggle visibility
+                if(studentList.style.display === 'block') {
+                    studentList.style.display = 'none';
+                    return;
+                }
+                
+                const teacherData = (await db.collection('users').doc(auth.currentUser.uid).get()).data();
+                const students = await db.collection('users').where('grade', '==', teacherData.grade).where('role', '==', 'student').get();
+                
+                let html = '<div style="display:grid; grid-template-columns:1fr; gap:6px;">';
+                students.forEach(doc => {
+                    const student = doc.data();
+                    html += `<button class="btn-ghost" style="padding:8px; text-align:left; cursor:pointer; border-radius:6px;" onclick="selectStudent('${doc.id}', '${student.name}')">${student.name} (${student.total_xp} XP)</button>`;
+                });
+                html += '</div>';
+                
+                studentList.innerHTML = html;
+                studentList.style.display = 'block';
+            } catch(e) {
+                console.error("Error loading students:", e);
+                notify("Error loading students: " + e.message, "error");
+            }
+        }
+
+        function selectStudent(studentId, studentName) {
+            console.log("Selecting student:", studentId, studentName);
+            document.getElementById('t-selected-student-id').value = studentId;
+            console.log("Hidden input value set to:", document.getElementById('t-selected-student-id').value);
+            document.getElementById('selected-student-display').innerText = `✓ Selected: ${studentName}`;
+            document.getElementById('selected-student-display').style.color = 'var(--green)';
+            // Close the dropdown list
+            document.getElementById('t-student-list').style.display = 'none';
+            document.getElementById('t-student-list').innerHTML = '';
+        }
+
+        function selectAllStudents() {
+            console.log("Selecting all students");
+            document.getElementById('t-selected-student-id').value = 'ALL';
+            document.getElementById('selected-student-display').innerText = '🌟 Gift to ALL Students Selected';
+            document.getElementById('selected-student-display').style.color = 'var(--primary)';
+            document.getElementById('t-student-list').style.display = 'none';
+            document.getElementById('t-student-list').innerHTML = '';
+        }
+
+        function updateStudentDisplay() {
+            const selectedValue = document.getElementById('t-gift-student').value;
+            if(selectedValue === 'all') {
+                document.getElementById('selected-student-display').innerText = '🌟 All Students Selected';
+                document.getElementById('selected-student-display').style.color = 'var(--primary)';
+            } else if(selectedValue === '') {
+                document.getElementById('selected-student-display').innerText = 'Select a student';
+                document.getElementById('selected-student-display').style.color = 'var(--blue)';
+            }
+        }
+
+        async function loadRewardSettings() {
+            // Reward settings UI has been removed
+            // This function is kept for backwards compatibility but does nothing
+        }
+
+        // ===== ADMOB AD FUNCTIONS =====
+        
+        // UPDATE THIS WITH YOUR AD UNIT ID FROM ADMOB
+        const ADMOB_AD_UNIT_ID = "ca-app-pub-4462145263807781/6238887748"; // Your new Ad Unit ID
+        
+        // Track daily ad watches
+        let adWatchestoday = 0;
+        const MAX_ADS_PER_DAY = 999; // Unlimited ads (set to 999)
+        const AD_REWARD_COINS = 10;
+
+        async function initializeAdTracking() {
+            try {
+                const uid = auth.currentUser.uid;
+                const userDoc = await db.collection('users').doc(uid).get();
+                if(userDoc.exists) {
+                    const userData = userDoc.data();
+                    const today = new Date().toDateString();
+                    const lastAdDate = userData.lastAdDate || '';
+                    
+                    // Reset if new day
+                    if(lastAdDate !== today) {
+                        adWatchestoday = 0;
+                    } else {
+                        adWatchestoday = userData.adsWatchedToday || 0;
+                    }
+                    
+                    updateAdDisplay();
+                }
+            } catch(e) {
+                console.error("Error initializing ad tracking:", e);
+            }
+        }
+
+        function updateAdDisplay() {
+            // With unlimited ads, button is always enabled
+            const btn = document.querySelector('button[onclick="watchAdForCoins()"]');
+            if(btn) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerText = '🎬 Watch Ad Now';
+            }
+        }
+
+        async function watchAdForCoins() {
+            // Check if user is logged in
+            if(!auth.currentUser) {
+                notify("You must be logged in!", "error");
+                return;
+            }
+
+            try {
+                // Load the ad
+                notify("Loading ad...");
+                
+                // Using Google Ad Manager rewarded ads
+                // Note: In production, you'd use Google's official ad SDK
+                // For now, we're using a simple implementation
+                
+                // Simulate ad watching
+                showAdSimulation();
+                
+            } catch(e) {
+                notify("Error loading ad: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        function showAdSimulation() {
+            // Show ad modal with video
+            const adModal = document.createElement('div');
+            adModal.id = 'ad-modal';
+            adModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: #000;
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+            `;
+            
+            let timeLeft = 30; // 30 seconds for real ads (changed from 5)
+            
+            // Create video player with placeholder video
+            adModal.innerHTML = `
+                <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000;">
+                    <video id="ad-video" width="100%" height="100%" style="max-width: 600px; max-height: 400px; background: #000;" controls autoplay>
+                        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div style="color: white; margin-top: 20px; text-align: center;">
+                        <h3>📺 Advertisement</h3>
+                        <div style="font-size: 1.5rem; font-weight: bold; margin: 10px 0;" id="ad-timer">${timeLeft}s</div>
+                        <p style="color: #8b949e;">Watch to earn <span style="color: var(--primary);">+10 Coins</span></p>
+                        <p style="font-size: 0.85rem; color: #666;">You must watch the entire video to get your reward</p>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(adModal);
+            
+            const videoElement = document.getElementById('ad-video');
+            
+            // Countdown timer
+            const timerInterval = setInterval(() => {
+                timeLeft--;
+                const timerElement = document.getElementById('ad-timer');
+                if(timerElement) {
+                    timerElement.innerText = timeLeft + 's';
+                }
+                
+                // When timer reaches 0 and video is watched
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    const modal = document.getElementById('ad-modal');
+                    if(modal && modal.parentNode) {
+                        document.body.removeChild(modal);
+                    }
+                    completeAdReward();
+                }
+            }, 1000);
+        }
+
+        function skipAd() {
+            // Skip is no longer available - user must watch full ad
+            notify("You must watch the entire ad to earn the reward!", "error");
+        }
+
+        async function completeAdReward() {
+            try {
+                const uid = auth.currentUser.uid;
+                const uRef = db.collection('users').doc(uid);
+                
+                // Update user coins and ad tracking (NO XP)
+                const today = new Date().toDateString();
+                
+                await uRef.update({
+                    points: firebase.firestore.FieldValue.increment(AD_REWARD_COINS),
+                    adsWatchedToday: firebase.firestore.FieldValue.increment(1),
+                    lastAdDate: today
+                });
+                
+                adWatchestoday++;
+                updateAdDisplay();
+                
+                // Show reward message
+                const msgElement = document.getElementById('ad-reward-msg');
+                if(msgElement) {
+                    msgElement.innerText = `✅ +${AD_REWARD_COINS} Coins earned!`;
+                    msgElement.style.color = 'var(--green)';
+                    setTimeout(() => {
+                        msgElement.innerText = '';
+                    }, 3000);
+                }
+                
+                notify(`+${AD_REWARD_COINS} Coins earned! 🎉`);
+                
+            } catch(e) {
+                notify("Error rewarding coins: " + e.message, "error");
+                console.error(e);
+            }
+        }
+
+        // Initialize ad tracking when student logs in
+        function setupAdTracking() {
+            if(currentUserRole === 'student') {
+                initializeAdTracking();
+            }
+        }
+    </script>
+</body>
+</html>
